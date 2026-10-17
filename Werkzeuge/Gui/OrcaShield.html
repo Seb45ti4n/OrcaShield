@@ -1,0 +1,2451 @@
+<!doctype html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; object-src 'none'; media-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'">
+<title>OrcaShield</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18' shape-rendering='crispEdges'%3E%3Cpath fill='%23e9f3ff' d='M14 2h2v1H14zM15 3h3v1H15zM15 4h4v1H15zM16 5h3v1H16zM14 6h10v1H14zM3 7h1v1H3zM10 7h18v1H10zM4 8h1v1H4zM8 8h22v1H8zM5 9h26v1H5zM5 10h27v1H5zM5 11h27v1H5zM5 12h2v1H5zM8 12h22v1H8zM4 13h2v1H4zM13 13h14v1H13zM3 14h2v1H3z'/%3E%3Cpath fill='%234cc3ff' d='M30 11h2v1H30zM13 12h17v1H13zM17 13h10v1H17zM25 8h3v1H25zM24 9h3v1H24zM29 10h1v1H29z'/%3E%3C/svg%3E">
+<style>
+/* ==============================================================
+   OrcaShield – GUI-Entwurf 2
+   Ruhig: wenig Etiketten, viel Luft. Details erst beim Aufklappen.
+   Farben als Variablen; Dunkel ist Vorgabe.
+   ============================================================== */
+:root {
+  --akzent: #4cc3ff;
+  --gruen: #46c98b;
+  --gelb: #e2b046;
+  --rot: #e5675f;
+  --radius: 14px;
+  --abstand: 16px;
+  --schrift: 15px;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Code", "Cascadia Mono", Consolas, monospace;
+  --dauer: .22s;
+}
+:root, :root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0d10;
+  --flaeche: #121519;
+  --flaeche-2: #171b20;
+  --flaeche-3: #1d2228;
+  --linie: #252a31;
+  --linie-2: #30363e;
+  --text: #e6eaef;
+  --leise: #8b949e;
+  --sehrleise: #5d6670;
+  --schatten: 0 18px 50px rgba(0, 0, 0, .55);
+  --welle: rgba(76, 195, 255, .05);
+  --orca-koerper: #05070a;
+  --orca-weiss: #e9f3ff;
+  --orca-glanz: #1d2b38;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --bg: #d9e0e8; --flaeche: #e7ecf2; --flaeche-2: #e0e6ed; --flaeche-3: #d4dce5;
+    --linie: #c4ceda; --linie-2: #b2bdca; --text: #132131; --leise: #4d5b6a; --sehrleise: #788695;
+    --schatten: 0 14px 40px rgba(20, 30, 40, .14); --welle: rgba(30, 120, 200, .06);
+    --orca-koerper: #0b0d10; --orca-weiss: #ffffff; --orca-glanz: #3a4552;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    --bg: #0b0d10; --flaeche: #121519; --flaeche-2: #171b20; --flaeche-3: #1d2228;
+    --linie: #252a31; --linie-2: #30363e; --text: #e6eaef; --leise: #8b949e; --sehrleise: #5d6670;
+    --schatten: 0 18px 50px rgba(0, 0, 0, .55); --welle: rgba(76, 195, 255, .05);
+    --orca-koerper: #05070a; --orca-weiss: #e9f3ff; --orca-glanz: #1d2b38;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #d9e0e8; --flaeche: #e7ecf2; --flaeche-2: #e0e6ed; --flaeche-3: #d4dce5;
+  --linie: #c4ceda; --linie-2: #b2bdca; --text: #132131; --leise: #4d5b6a; --sehrleise: #788695;
+  --schatten: 0 14px 40px rgba(20, 30, 40, .14); --welle: rgba(30, 120, 200, .06);
+  --orca-koerper: #0b0d10; --orca-weiss: #ffffff; --orca-glanz: #3a4552;
+}
+:root[data-dichte="kompakt"] { --abstand: 10px; }
+:root[data-dichte="luftig"]  { --abstand: 24px; }
+:root[data-ecken="eckig"]    { --radius: 4px; }
+:root[data-ecken="rund"]     { --radius: 22px; }
+:root[data-bewegung="aus"]   { --dauer: 0s; }
+:root[data-bewegung="aus"] *, :root[data-bewegung="aus"] *::before, :root[data-bewegung="aus"] *::after { animation: none !important; }
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+/* Rollbalken: schmal, abgerundet, in den Farben des Themas, ohne Pfeile -
+   wie bei iOS erst deutlich, wenn man ihn braucht. (Die Standard-Eigenschaften
+   scrollbar-width/-color würden diese Regeln in Chromium überstimmen und sind
+   deshalb nirgends gesetzt.) */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--linie-2); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--sehrleise); background-clip: padding-box; }
+::-webkit-scrollbar-button { display: none; }
+body { margin: 0; background: var(--bg); color: var(--text); font: var(--schrift)/1.55 var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+/* Eigener Look (G11, behutsam): Tiefe wie unter Wasser - oben fällt ein schwaches
+   Licht in der Akzentfarbe ein, nach unten wird es dunkler. Grau/Schwarz bleiben. */
+body::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(1100px 520px at 72% -12%, color-mix(in srgb, var(--akzent) 9%, transparent), transparent 62%),
+              linear-gradient(180deg, transparent 55%, color-mix(in srgb, #000 22%, transparent)); }
+:root[data-theme="light"] body::before { background: radial-gradient(1100px 520px at 72% -12%, color-mix(in srgb, var(--akzent) 14%, transparent), transparent 62%); }
+h1, h2 { letter-spacing: .2px; }
+button, input, select { font: inherit; color: inherit; }
+::selection { background: color-mix(in srgb, var(--akzent) 35%, transparent); }
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--akzent) 70%, transparent); outline-offset: 2px; }
+.leise { color: var(--leise); }
+.mono { font-family: var(--mono); }
+
+/* --- Meer im Hintergrund, mit gelegentlicher Flosse ------------------ */
+.meer { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.meer svg.welle { position: absolute; left: 0; bottom: -2px; width: 200%; height: 170px; animation: wogen 40s linear infinite; }
+:root[data-wellen="aus"] .meer svg { display: none; }
+@keyframes wogen { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.flosse-weit { position: absolute; bottom: 92px; left: -40px; width: 22px; opacity: 0; animation: vorbei 210s linear infinite 25s; }
+@keyframes vorbei { 0% { left: -40px; opacity: 0; } 1% { opacity: .5; } 7% { left: 105%; opacity: .5; } 7.1%, 100% { left: 105%; opacity: 0; } }
+
+/* --- Gerüst --------------------------------------------------------- */
+.app { position: relative; z-index: 1; display: grid; grid-template-columns: 264px 1fr; height: 100vh; }
+.nav { border-right: 1px solid var(--linie); background: color-mix(in srgb, var(--flaeche) 92%, transparent); display: flex; flex-direction: column; min-height: 0; }
+.marke { display: flex; align-items: center; gap: 12px; padding: 20px 18px 12px; cursor: default; user-select: none; }
+.marke .orca { width: 78px; height: 41px; flex: none; position: relative; }
+.marke .orca svg { width: 100%; height: 100%; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--akzent) 55%, transparent)) drop-shadow(0 0 16px color-mix(in srgb, var(--akzent) 22%, transparent)); }
+.marke b { font: 700 19px/1 var(--font-display); letter-spacing: .3px; }
+.marke small { display: block; color: var(--sehrleise); font-size: 11.5px; margin-top: 5px; letter-spacing: .2px; }
+.auge { transition: opacity .08s; }
+.marke:hover .auge { animation: blinzeln 3.2s infinite; }
+@keyframes blinzeln { 0%, 92%, 100% { opacity: 1; } 95% { opacity: 0; } }
+.fontaene { position: absolute; left: 58px; top: -6px; width: 6px; height: 10px; opacity: 0; }
+.marke:hover .fontaene { animation: pusten 1.6s ease-out 1; }
+.fontaene i { position: absolute; width: 2px; height: 2px; background: var(--akzent); }
+@keyframes pusten { 0% { opacity: 0; transform: translateY(6px); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(-8px); } }
+.orca.sprung svg { animation: sprung 1.4s ease-in-out 1; }
+/* Kleiner Orca-Moment bei jeder Änderung: kurzer Hüpfer mit Fontäne */
+.orca.hopser svg { animation: hopser .7s ease-out 1; }
+.orca.hopser .fontaene, .orca.sprung .fontaene { animation: pusten 1.3s ease-out 1; }
+@keyframes hopser { 0%, 100% { transform: translateY(0) rotate(0); } 40% { transform: translateY(-4px) rotate(-4deg); } }
+@keyframes sprung { 0%, 100% { transform: translateY(0) rotate(0); } 35% { transform: translateY(-9px) rotate(-8deg); } 70% { transform: translateY(1px) rotate(4deg); } }
+
+.ring-box { margin: 6px 14px 10px; padding: 16px; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--flaeche-2); display: flex; gap: 16px; align-items: center; cursor: pointer; transition: border-color var(--dauer); }
+.ring-box:hover { border-color: var(--linie-2); }
+.ring { --p: 0; width: 68px; height: 68px; border-radius: 50%; flex: none; display: grid; place-items: center; position: relative;
+  background: conic-gradient(var(--akzent) calc(var(--p) * 1%), var(--flaeche-3) 0); }
+.ring > span { width: 54px; height: 54px; border-radius: 50%; background: var(--flaeche-2); display: grid; place-items: center; font: 700 15px var(--font-display); }
+.ring .spitze { position: absolute; inset: 0; transform: rotate(calc(var(--p) * 3.6deg)); pointer-events: none; }
+.ring .spitze::before { content: ""; position: absolute; left: 50%; top: -3px; width: 0; height: 0; translate: -50% 0;
+  border-left: 3px solid transparent; border-right: 4px solid transparent; border-bottom: 7px solid var(--akzent); }
+.ring-box .zeilen { font-size: 13px; color: var(--leise); line-height: 1.5; }
+.ring-box .zeilen b { color: var(--text); font-weight: 600; }
+
+.nav-scroll { overflow: auto; padding: 4px 10px 12px; flex: 1; min-height: 0; }
+.nav h4 { margin: 16px 10px 6px; font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--sehrleise); font-weight: 600; }
+.nav-punkt { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 9px; border: 0; background: none; cursor: pointer; text-align: left; color: var(--leise); transition: background var(--dauer), color var(--dauer); }
+.nav-punkt:hover { background: var(--flaeche-3); color: var(--text); }
+.nav-punkt.an { background: color-mix(in srgb, var(--akzent) 13%, transparent); color: var(--text); }
+.nav-punkt .ico { width: 17px; height: 17px; flex: none; opacity: .85; }
+.nav-punkt.an .ico { color: var(--akzent); opacity: 1; }
+.nav-punkt .lbl { flex: 1; font-size: 13.8px; }
+.nav-punkt .zahl { font-size: 11.5px; color: var(--sehrleise); font-variant-numeric: tabular-nums; }
+.nav-punkt .zahl.offen::before { content: "● "; color: var(--gelb); font-size: 8px; vertical-align: 2px; }
+.nav-fuss { padding: 12px; border-top: 1px solid var(--linie); display: flex; flex-direction: column; gap: 10px; }
+.sendet-nichts { display: flex; gap: 8px; align-items: center; font-size: 11.5px; color: var(--sehrleise); cursor: pointer; border: 0; background: none; padding: 0 2px; text-align: left; }
+.sendet-nichts svg { width: 14px; height: 14px; color: var(--gruen); flex: none; }
+.sendet-nichts:hover { color: var(--leise); }
+
+/* --- Kopf ------------------------------------------------------------ */
+.haupt { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.kopf { padding: 14px 32px 14px; display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid var(--linie); background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(12px); position: relative; z-index: 5; }
+.kopf-oben { display: flex; align-items: center; gap: 10px; }
+.kopf-zeile { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.kopf h1 { margin: 0; font: 650 25px/1.15 var(--font-display); letter-spacing: .2px; flex: 1; min-width: 220px; }
+.kopf h1 small { display: block; font: 400 13px var(--font); color: var(--leise); margin-top: 6px; letter-spacing: 0; }
+.suche { position: relative; flex: 0 1 340px; min-width: 200px; }
+.suche input { width: 100%; padding: 9px 14px 9px 36px; border-radius: 10px; border: 1px solid var(--linie); background: var(--flaeche); outline: none; transition: border-color var(--dauer); }
+.suche input:focus { border-color: color-mix(in srgb, var(--akzent) 60%, var(--linie)); }
+.suche svg { position: absolute; left: 12px; top: 50%; translate: 0 -50%; width: 15px; color: var(--sehrleise); }
+.suche kbd { position: absolute; right: 10px; top: 50%; translate: 0 -50%; font: 11px var(--mono); color: var(--sehrleise); border: 1px solid var(--linie); border-radius: 5px; padding: 0 6px; }
+.platscher { position: absolute; right: 40px; top: 4px; pointer-events: none; }
+.platscher i { position: absolute; width: 3px; height: 3px; background: var(--akzent); border-radius: 1px; animation: tropfen .9s ease-out forwards; }
+@keyframes tropfen { from { opacity: 1; transform: translate(0, 0); } to { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
+
+.klein-knopf { border: 1px solid var(--linie); background: var(--flaeche); border-radius: 9px; padding: 6px 11px; cursor: pointer; font-size: 12.5px; color: var(--leise); display: inline-flex; align-items: center; gap: 7px; transition: all var(--dauer); }
+.klein-knopf:hover { color: var(--text); border-color: var(--linie-2); }
+.klein-knopf svg { width: 14px; height: 14px; }
+.verlauf-wrap { position: relative; }
+.verlauf-drop { position: absolute; top: calc(100% + 8px); left: 0; width: min(440px, 80vw); background: var(--flaeche-2); border: 1px solid var(--linie-2); border-radius: 12px; box-shadow: var(--schatten); display: none; z-index: 20; overflow: hidden; }
+.verlauf-drop.auf { display: block; }
+.verlauf-drop .kopfzeile { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 8px 14px; border-bottom: 1px solid var(--linie); font-size: 12.5px; color: var(--leise); }
+.verlauf-drop .liste { max-height: 320px; overflow: auto; }
+.v-zeile { display: grid; grid-template-columns: 74px 1fr; gap: 10px; padding: 8px 14px; font-size: 12.5px; border-bottom: 1px solid color-mix(in srgb, var(--linie) 60%, transparent); }
+.v-zeile:last-child { border-bottom: 0; }
+.v-zeile time { color: var(--sehrleise); font-variant-numeric: tabular-nums; }
+.v-zeile .t { color: var(--leise); }
+.v-zeile .t b { color: var(--text); font-weight: 600; margin-right: 6px; }
+.v-zeile.warn .t b { color: var(--gelb); }
+.v-zeile.fehler .t b { color: var(--rot); }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.chip { border: 1px solid transparent; background: none; border-radius: 8px; padding: 5px 11px; cursor: pointer; font-size: 13px; color: var(--leise); transition: all var(--dauer); white-space: nowrap; }
+.chip:hover { color: var(--text); background: var(--flaeche-2); }
+.chip.an { color: var(--text); background: var(--flaeche-3); border-color: var(--linie-2); }
+.chip .n { color: var(--sehrleise); margin-left: 5px; font-variant-numeric: tabular-nums; }
+.chip .punkt { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+
+.knopf { border: 1px solid var(--linie-2); background: var(--flaeche-3); border-radius: 10px; padding: 8px 15px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all var(--dauer); display: inline-flex; align-items: center; gap: 8px; }
+.knopf:hover { border-color: color-mix(in srgb, var(--akzent) 55%, var(--linie-2)); }
+.knopf.voll { background: var(--akzent); color: #041018; border-color: var(--akzent); }
+.knopf.voll:hover { filter: brightness(1.07); }
+.knopf.gefahr { color: var(--rot); border-color: color-mix(in srgb, var(--rot) 45%, transparent); background: transparent; }
+.knopf.still { background: transparent; }
+.knopf svg { width: 15px; height: 15px; }
+
+.inhalt { overflow: auto; flex: 1; padding: 28px 32px 140px;
+  /* Zum unteren Rand hin leicht durchscheinend: fest am Fenster, die Kacheln
+     werden beim Scrollen unten weicher und die Wellen schimmern durch. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 170px), rgba(0, 0, 0, .55) 100%);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 170px), rgba(0, 0, 0, .55) 100%); }
+:root[data-wellen="aus"] .inhalt { -webkit-mask-image: none; mask-image: none; }
+.breite { max-width: 1600px; }
+
+/* --- Dashboard ------------------------------------------------------- */
+.hinweis-band { display: flex; gap: 12px; align-items: flex-start; padding: 13px 16px; border: 1px solid var(--linie); border-left: 3px solid var(--gelb); border-radius: 10px; background: var(--flaeche); margin-bottom: 26px; font-size: 13.5px; color: var(--leise); }
+.hinweis-band b { color: var(--text); font-weight: 600; }
+.abschnitt { display: flex; align-items: baseline; gap: 12px; margin: 0 0 16px; }
+.abschnitt h2 { margin: 0; font: 600 16px var(--font-display); }
+.abschnitt .leise { font-size: 12.5px; }
+.legende { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--sehrleise); margin: -6px 0 18px; }
+.legende i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 0; }
+.dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(250px, calc((100% - (var(--spalten-kat, 4) - 1) * (var(--abstand) + 2px)) / var(--spalten-kat, 4))), 1fr)); gap: calc(var(--abstand) + 2px); }
+.kachel-k { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 12px; transition: border-color var(--dauer); }
+.kachel-k:hover { border-color: var(--linie-2); }
+.kachel-k .oben { display: flex; align-items: center; gap: 10px; }
+.kachel-k .oben .ico { width: 18px; height: 18px; color: var(--leise); flex: none; }
+.kachel-k .oben b { font-weight: 600; font-size: 14.5px; flex: 1; }
+.kachel-k .oben .zahl { font-size: 12px; color: var(--sehrleise); font-variant-numeric: tabular-nums; }
+.kachel-k p { margin: 0; font-size: 13px; color: var(--leise); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.9em; cursor: pointer; }
+.kachel-k.auf p { -webkit-line-clamp: unset; display: block; color: var(--text); }
+.kachel-k .oben { cursor: pointer; }
+@container (max-width: 220px) { .kachel-k { padding: 14px 13px 13px; gap: 10px; } .kachel-k .oben b { font-size: 13.5px; } }
+.balken { height: 3px; background: var(--flaeche-3); border-radius: 3px; overflow: hidden; }
+.balken i { display: block; height: 100%; background: var(--akzent); opacity: .8; border-radius: 3px; transition: width .4s; }
+.stufen { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--flaeche-2); border: 1px solid var(--linie); border-radius: 10px; padding: 3px; gap: 3px; }
+.stufen button { border: 0; background: none; padding: 6px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 7px; cursor: pointer; font-size: 12.5px; color: var(--leise); display: flex; align-items: center; justify-content: center; gap: 6px; transition: all var(--dauer); }
+.stufen button:hover { color: var(--text); background: var(--flaeche-3); }
+.stufen button i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.stufen button.an { background: var(--flaeche-3); color: var(--text); box-shadow: inset 0 0 0 1px var(--linie-2); }
+.stufen button.an[data-s="gruen"] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gruen) 55%, transparent); }
+.stufen button.an[data-s="gelb"] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gelb) 55%, transparent); }
+.stufen button.an[data-s="rot"] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rot) 55%, transparent); }
+.stufen button.an[data-s="individuell"] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--akzent) 55%, transparent); }
+:root[data-spalten="3"] { --spalten: 3; }
+:root[data-spalten="4"] { --spalten: 4; }
+:root[data-spalten="5"] { --spalten: 5; }
+:root[data-spalten-kat="3"] { --spalten-kat: 3; }
+:root[data-spalten-kat="4"] { --spalten-kat: 4; }
+:root[data-spalten-kat="5"] { --spalten-kat: 5; }
+/* Kachel öffnet die Seite ihres Bereichs; die Stufenknöpfe wählen nur die Stufe */
+.kachel-k { cursor: pointer; }
+.kachel-k .stufen { cursor: default; }
+/* Stufenwahl passt sich der Kachelbreite an, statt Wörter abzuschneiden */
+.kachel-k, .kat-kopf { container-type: inline-size; }
+@container (max-width: 330px) { .stufen button { font-size: 12px; gap: 4px; } .stufen button i { width: 6px; height: 6px; } }
+@container (max-width: 290px) { .stufen { grid-template-columns: repeat(2, 1fr); } .stufen button { font-size: 12.5px; } }
+.stufe-text { font-size: 12px; color: var(--sehrleise); min-height: 1.5em; }
+.trennlinie { border: 0; border-top: 1px solid var(--linie); margin: 40px 0 30px; }
+.kat-kopf { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: 18px; margin-bottom: 22px; display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+.kat-kopf p { margin: 0; font-size: 13.5px; color: var(--leise); }
+
+/* --- Dashboard: alles Wichtige auf einen Blick, sehr kompakt ------------- */
+.db { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; max-width: 1280px; }
+.db-k { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: 16px 18px; min-width: 0; }
+.db-k h3 { overflow-wrap: anywhere; margin: 0 0 10px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--sehrleise); font-weight: 600; }
+.db-zahlen { grid-column: span 7; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.db-gross { grid-column: span 5; display: flex; gap: 18px; align-items: center; }
+.db-gross .ring { width: 96px; height: 96px; }
+.db-gross .ring > span { width: 78px; height: 78px; font-size: 22px; }
+.db-gross .zeilen { font-size: 13.5px; color: var(--leise); line-height: 1.55; }
+.db-gross .zeilen b { color: var(--text); font-weight: 600; }
+.db-zahl { display: flex; flex-direction: column; gap: 4px; cursor: default; }
+.db-zahl.klick { cursor: pointer; transition: border-color var(--dauer); }
+.db-zahl.klick:hover { border-color: var(--linie-2); }
+.db-zahl b { font: 650 26px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.db-zahl span { font-size: 12.5px; color: var(--leise); }
+.db-zahl.warn b { color: var(--rot); }
+.db-zahl.offen b { color: var(--akzent); }
+.db-bereiche { grid-column: span 8; }
+.db-liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 22px; }
+.db-zeile { display: grid; grid-template-columns: 16px minmax(0, 1fr) 44px 42px 8px; gap: 10px; align-items: center; padding: 6px 4px; border-radius: 7px; cursor: pointer; font-size: 13px; color: var(--leise); }
+.db-zeile:hover { background: var(--flaeche-2); color: var(--text); }
+.db-zeile .ico { width: 15px; height: 15px; }
+.db-zeile .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-zeile .zahl { text-align: right; font-variant-numeric: tabular-nums; color: var(--sehrleise); font-size: 12px; }
+.db-zeile .st { width: 8px; height: 8px; border-radius: 50%; }
+.db-dienste { grid-column: span 4; display: flex; flex-direction: column; gap: 10px; }
+.db-dienst { display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: var(--leise); }
+.db-dienst i { width: 7px; height: 7px; border-radius: 50%; background: var(--gruen); flex: none; translate: 0 -1px; }
+.db-dienst i.aus { background: var(--sehrleise); }
+.db-dienst b { color: var(--text); font-weight: 600; min-width: 128px; }
+.db-verlauf { grid-column: span 8; padding: 6px 0; }
+.db-wieder { grid-column: span 4; display: flex; flex-direction: column; gap: 12px; }
+.db-wieder p { margin: 0; font-size: 13px; }
+.db-wieder-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+.db-wieder .knopf:disabled { opacity: .4; cursor: not-allowed; }
+.db-snaps { display: flex; flex-direction: column; gap: 6px; }
+.db-snap { display: flex; align-items: center; gap: 10px; justify-content: space-between; font-size: 13px; }
+.db-snap small { display: block; color: var(--sehrleise); font-size: 11.5px; }
+.db-verlauf h3 { padding: 10px 18px 0; }
+@media (max-width: 1180px) { .db-gross, .db-zahlen { grid-column: span 12; } .db-bereiche, .db-dienste, .db-wieder, .db-verlauf { grid-column: span 12; } }
+
+/* --- Karten der Einstellungen --------------------------------------- */
+/* Gewählte Spaltenzahl ist die Höchstzahl: Im schmalen Fenster werden es weniger, damit eine
+   Karte nie schmaler als 230 px wird (sonst bricht der Titel nach jedem Wort um). */
+.raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(230px, calc((100% - (var(--spalten, 4) - 1) * var(--abstand)) / var(--spalten, 4))), 1fr)); gap: var(--abstand); }
+/* Die gewählte Spaltenzahl gilt immer (Wunsch: „die Anzahl wird erzwungen“).
+   Statt Spalten wegzunehmen, werden schmale Karten feiner gesetzt. */
+.karte { container-type: inline-size; }
+@container (max-width: 250px) {
+  .karte-kopf { gap: 10px; }
+  .karte-text h3 { font-size: 13.2px; }
+  .karte-erkl { font-size: 12.4px; }
+  .karte-text .meta { gap: 7px; font-size: 11.2px; }
+  .schalter { transform: scale(.88); transform-origin: top right; }
+}
+@container (max-width: 200px) { .karte-text .meta .mono { display: none; } }
+:root[data-ansicht="liste"] .raster { grid-template-columns: 1fr; }
+/* Dichte wie in einem Mailprogramm: Kompakt zeigt weniger, Luftig mehr. */
+:root[data-dichte="kompakt"] .karte-erkl, :root[data-dichte="kompakt"] .kachel-k p { display: none; }
+:root[data-dichte="kompakt"] .karte { gap: 4px; }
+:root[data-dichte="kompakt"] .stufe-text { display: none; }
+:root[data-dichte="luftig"] .karte-erkl { -webkit-line-clamp: 5; }
+:root[data-dichte="luftig"] .kachel-k p { -webkit-line-clamp: 4; min-height: 0; }
+:root[data-dichte="luftig"] .karte { gap: 12px; }
+.gruppe-titel { grid-column: 1 / -1; margin: 22px 2px 2px; display: flex; align-items: baseline; gap: 10px; }
+.gruppe-titel:first-child { margin-top: 0; }
+.gruppe-titel h2 { margin: 0; font: 600 15.5px var(--font-display); }
+.gruppe-titel span { color: var(--sehrleise); font-size: 12.5px; }
+.karte { --farbe: var(--linie-2); position: relative; background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: calc(var(--abstand) + 1px) calc(var(--abstand) + 2px) calc(var(--abstand) + 1px) calc(var(--abstand) + 6px);
+  display: flex; flex-direction: column; gap: 9px; transition: border-color var(--dauer), box-shadow var(--dauer); animation: rein .3s both; }
+.karte::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: var(--farbe); opacity: .85; }
+.karte[data-e="Keiner"] { --farbe: var(--gruen); }
+.karte[data-e="Leicht"] { --farbe: var(--gelb); }
+.karte[data-e="Tief"] { --farbe: var(--rot); }
+@keyframes rein { from { transform: translateY(5px); } }
+.karte:hover { border-color: var(--linie-2); }
+.karte.geaendert { border-color: color-mix(in srgb, var(--akzent) 65%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--akzent) 12%, transparent); }
+.karte.nv { opacity: .55; }
+.karte-kopf { display: flex; gap: 14px; align-items: flex-start; }
+.karte-text { flex: 1; min-width: 0; cursor: pointer; }
+.karte-text h3 { margin: 0; font-size: 14.5px; font-weight: 600; line-height: 1.4; }
+.karte-text .meta { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 12px; color: var(--sehrleise); }
+.meta .status-an { color: var(--gruen); }
+.meta .status-aus { color: var(--leise); }
+.meta .vorgemerkt { color: var(--akzent); }
+.sicherheit { color: var(--rot); font-weight: 600; cursor: pointer; border: 0; background: none; padding: 0; font-size: inherit; }
+.sicherheit:hover { text-decoration: underline; text-underline-offset: 3px; }
+.karte-erkl { color: var(--leise); font-size: 13.2px; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.karte.offen-auf .karte-erkl { -webkit-line-clamp: unset; display: block; color: var(--text); }
+.details { display: none; flex-direction: column; gap: 10px; font-size: 13px; margin-top: 4px; }
+.karte.offen-auf .details { display: flex; }
+.box { border-radius: 9px; padding: 10px 12px; background: var(--flaeche-2); border: 1px solid var(--linie); color: var(--leise); }
+.box b { color: var(--text); font-weight: 600; }
+.box.warnung { border-color: color-mix(in srgb, var(--rot) 45%, transparent); }
+.box.warnung b { color: var(--rot); }
+.box.hinweis b { color: var(--akzent); }
+.code-box { border-radius: 9px; background: var(--bg); border: 1px solid var(--linie); overflow: hidden; }
+.code-box .reiter { display: flex; border-bottom: 1px solid var(--linie); }
+.code-box .reiter button { flex: none; border: 0; background: none; padding: 7px 12px; font-size: 12px; color: var(--sehrleise); cursor: pointer; border-bottom: 2px solid transparent; }
+.code-box .reiter button.an { color: var(--text); border-bottom-color: var(--akzent); }
+.code-box .reiter .kopieren { margin-left: auto; color: var(--leise); }
+.code-box pre { margin: 0; padding: 11px 12px; font: 12px/1.6 var(--mono); color: #b9c4cf; white-space: pre-wrap; word-break: break-all; }
+:root[data-theme="light"] .code-box pre { color: #2b3540; }
+.technik { font: 11.8px/1.65 var(--mono); color: var(--sehrleise); word-break: break-all; }
+.technik span { color: var(--leise); }
+:root[data-technik="aus"] .technik-box { display: none; }
+.karte-aktionen { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* --- Erklärende Einblendung (nur wo ein Begriff sie braucht) --------- */
+/* Ein einziges Element, das per Skript am Fensterrand ausgerichtet wird –
+   die Einblendung ist immer ganz zu lesen. */
+.tipp { position: fixed; left: 0; top: 0; max-width: 300px; padding: 9px 12px; border-radius: 9px; background: var(--flaeche-3); border: 1px solid var(--linie-2);
+  color: var(--text); box-shadow: var(--schatten); font: 400 12.5px/1.45 var(--font); pointer-events: none; opacity: 0; transform: translateY(3px);
+  transition: opacity .16s, transform .16s; z-index: 60; }
+.tipp.zeigt { opacity: 1; transform: none; }
+
+/* --- Schalter mit Augenfleck --------------------------------------- */
+.schalter { position: relative; width: 46px; height: 26px; flex: none; margin-top: 1px; }
+.schalter input { appearance: none; margin: 0; width: 100%; height: 100%; border-radius: 999px; cursor: pointer; background: var(--flaeche-3); border: 1px solid var(--linie-2); transition: background var(--dauer), border-color var(--dauer); }
+.schalter input::after { content: ""; position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; border-radius: 50%; background: #9aa4ae; transition: transform var(--dauer) cubic-bezier(.3,1.4,.5,1), background var(--dauer); }
+.schalter input::before { content: ""; position: absolute; top: 9px; left: 33px; width: 7px; height: 4px; border-radius: 50%; background: var(--orca-weiss); opacity: 0; z-index: 1; transform: rotate(12deg); transition: opacity var(--dauer) .1s; }
+.schalter input:checked { background: color-mix(in srgb, var(--akzent) 75%, #0b2030); border-color: transparent; }
+.schalter input:checked::after { transform: translateX(20px); background: var(--orca-koerper); }
+.schalter input:checked::before { opacity: .95; }
+.schalter input:disabled { cursor: not-allowed; opacity: .4; }
+
+/* --- Leiste, Dialog, Schublade, Overlay ----------------------------- */
+.leiste { position: fixed; left: calc(50% + 132px); bottom: 24px; translate: -50% 0; z-index: 20; display: flex; gap: 10px; align-items: center; padding: 9px 9px 9px 18px; border-radius: 14px; background: var(--flaeche-2); border: 1px solid var(--linie-2); box-shadow: var(--schatten); transition: transform var(--dauer), opacity var(--dauer); }
+.leiste.weg { transform: translateY(150%); opacity: 0; pointer-events: none; }
+.leiste .txt { font-size: 13.5px; white-space: nowrap; color: var(--leise); }
+.leiste .txt b { color: var(--text); }
+.schleier { position: fixed; inset: 0; z-index: 30; background: rgba(3, 5, 8, .62); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; padding: 16px; }
+.schleier.auf { display: flex; }
+.dialog { width: min(640px, 100%); max-height: 88vh; overflow: auto; background: var(--flaeche); border: 1px solid var(--linie-2); border-radius: calc(var(--radius) + 4px); box-shadow: var(--schatten); padding: 26px; display: flex; flex-direction: column; gap: 16px; }
+.dialog h2 { margin: 0; font: 650 19px var(--font-display); }
+.dialog p { margin: 0; color: var(--leise); font-size: 13.5px; }
+.dialog .knoepfe { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }
+.vorschau-gruppe h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--leise); text-transform: uppercase; letter-spacing: 1px; }
+.vorschau-gruppe ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.vorschau-gruppe li { display: flex; gap: 10px; align-items: baseline; font-size: 13.2px; }
+.vorschau-gruppe li .mono { color: var(--sehrleise); font-size: 11.5px; flex: none; width: 58px; }
+.vorschau-gruppe li .flags { margin-left: auto; font-size: 11.5px; color: var(--sehrleise); white-space: nowrap; }
+.schublade { position: fixed; top: 0; right: 0; bottom: 0; z-index: 31; width: min(390px, 100%); background: var(--flaeche); border-left: 1px solid var(--linie-2); box-shadow: var(--schatten); padding: 24px; overflow: auto; transform: translateX(105%); transition: transform var(--dauer); display: flex; flex-direction: column; gap: 20px; }
+.schublade.auf { transform: none; }
+.schublade h2 { margin: 0; font: 650 19px var(--font-display); }
+.feld { display: flex; flex-direction: column; gap: 8px; }
+.feld > label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--sehrleise); font-weight: 600; }
+.segment { display: flex; border: 1px solid var(--linie); border-radius: 10px; overflow: hidden; background: var(--flaeche-2); }
+.segment button { flex: 1; border: 0; background: none; padding: 8px 6px; cursor: pointer; font-size: 12.5px; color: var(--leise); }
+.segment button + button { border-left: 1px solid var(--linie); }
+.segment button.an { background: var(--flaeche-3); color: var(--text); font-weight: 600; }
+.feld .feld-hinweis { font-size: 11.5px; color: var(--sehrleise); margin-top: -2px; }
+.farben { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.farbe { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--flaeche); cursor: pointer; outline: 1px solid var(--linie-2); }
+.farbe.an { outline: 2px solid var(--text); }
+.farben input[type=color] { width: 30px; height: 30px; border: 0; background: none; padding: 0; cursor: pointer; }
+input[type=range] { accent-color: var(--akzent); width: 100%; }
+.knopf:disabled { opacity: .4; cursor: not-allowed; }
+.eingabe { width: 100%; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--linie); background: var(--flaeche); color: inherit; font: inherit; outline: none; }
+.eingabe:focus { border-color: color-mix(in srgb, var(--akzent) 60%, var(--linie)); }
+
+.overlay { position: fixed; inset: 0; z-index: 40; background: var(--bg); display: none; align-items: center; justify-content: center; padding: 20px; }
+.overlay.auf { display: flex; }
+.bestand { width: min(620px, 100%); display: flex; flex-direction: column; gap: 22px; }
+.bestand .orca-gross { width: 170px; height: 90px; align-self: center; }
+.bestand .orca-gross svg { width: 100%; height: 100%; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--akzent) 50%, transparent)); animation: schwimmen 3.4s ease-in-out infinite; }
+@keyframes schwimmen { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.bestand h2 { margin: 0; text-align: center; font: 650 22px var(--font-display); }
+.bestand p { margin: 0; text-align: center; color: var(--leise); font-size: 14px; }
+.scan { display: flex; flex-direction: column; gap: 7px; max-height: 46vh; overflow: auto; padding-right: 14px; scrollbar-gutter: stable; }
+.scan-zeile { display: grid; grid-template-columns: 1fr 160px 70px; gap: 14px; align-items: center; font-size: 13px; color: var(--leise); opacity: 0; transition: opacity .3s; }
+.scan-zeile.da { opacity: 1; }
+.mess-fortschritt { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.mess-fortschritt .balken { width: min(420px, 100%); height: 4px; }
+.mess-fortschritt .balken i { transition: width .35s ease-out; }
+.mess-fortschritt span { font-size: 12.5px; color: var(--sehrleise); font-variant-numeric: tabular-nums; }
+.fehlertext { color: var(--rot) !important; }
+.abschluss { display: flex; gap: 16px; align-items: center; }
+/* Intro: ruhig, ein Schritt nach dem anderen; der Orca schwimmt mit */
+.intro { width: min(620px, 100%); display: flex; flex-direction: column; gap: 22px; }
+.intro-meer { position: relative; height: 70px; border-bottom: 1px solid var(--linie); }
+.intro-orca { position: absolute; bottom: 8px; width: 110px; height: 58px; transition: left .9s cubic-bezier(.4, .1, .2, 1); }
+.intro-orca svg { width: 100%; height: 100%; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--akzent) 45%, transparent)); animation: schwimmen 3.4s ease-in-out infinite; }
+.intro-schritt { display: flex; flex-direction: column; gap: 10px; min-height: 190px; animation: rein .35s both; }
+.intro-schritt h2 { margin: 0; font: 650 24px var(--font-display); }
+.intro-schritt p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text); }
+.intro-schritt p.leise, .intro-schritt span.leise { color: var(--leise); font-size: 13px; }
+.intro-punkte { display: flex; gap: 8px; justify-content: center; }
+.intro-punkte i { width: 7px; height: 7px; border-radius: 50%; background: var(--linie-2); transition: background var(--dauer), width var(--dauer); }
+.intro-punkte i.an { background: var(--akzent); width: 20px; border-radius: 4px; }
+.intro-knoepfe { display: flex; gap: 10px; align-items: center; }
+/* Profile: jede Zeile in ihrer Farbe; das aktive bzw. ausgewählte Profil leuchtet */
+.zeile-k.profil { position: relative; overflow: hidden; }
+.profil-farbe { width: 10px; height: 10px; border-radius: 50%; background: var(--pf); flex: none; }
+.zeile-k.profil.aktiv, .zeile-k.profil.ausgewaehlt { border-color: color-mix(in srgb, var(--pf) 70%, transparent); background: color-mix(in srgb, var(--pf) 9%, var(--flaeche)); }
+.zeile-k.profil.aktiv { box-shadow: 0 0 0 3px color-mix(in srgb, var(--pf) 18%, transparent); }
+.zeile-k.profil.aktiv b, .zeile-k.profil.ausgewaehlt b { color: var(--pf); }
+.profil-marke { margin-left: 8px; font-size: 11.5px; font-weight: 600; color: var(--pf); }
+.profil-waehler { width: 30px; height: 30px; border: 0; padding: 0; background: none; cursor: pointer; }
+.muell { border: 1px solid color-mix(in srgb, var(--rot) 40%, transparent); background: transparent; color: var(--rot); border-radius: 9px; width: 34px; height: 32px; display: grid; place-items: center; cursor: pointer; transition: background var(--dauer); }
+.muell:hover { background: color-mix(in srgb, var(--rot) 14%, transparent); }
+.muell svg { width: 16px; height: 16px; }
+.link-knopf { border: 0; background: none; padding: 0; color: var(--akzent); cursor: pointer; font: inherit; text-decoration: underline; text-underline-offset: 3px; }
+/* Über-Seite: ein Orca im Hintergrund, der fröhlich Wasser durch sein Blasloch bläst */
+.seite { position: relative; }
+.ueber-orca { position: relative; margin: 70px 8% 90px auto; width: 220px; height: 116px; opacity: .65; pointer-events: none; animation: schwimmen 4.5s ease-in-out infinite; }
+.ueber-orca svg { width: 100%; height: 100%; }
+.ueber-orca .blas { position: absolute; left: 71%; top: 36%; width: 2px; height: 2px; }
+/* Fontäne: jeder Tropfen steigt senkrecht auf, öffnet sich oben zur Seite und fällt zurück; danach Pause */
+.ueber-orca .blas i { position: absolute; width: 7px; height: 7px; border-radius: 2px; background: color-mix(in srgb, var(--akzent) 75%, white); opacity: 0;
+  --s: mod(var(--i) * 5, 7); --h: calc(-34px - var(--s) * 10px); --x: calc((var(--i) - 6) * 3.2px * (.5 + var(--s) * .18));
+  animation: blasen 3.6s cubic-bezier(.2,.7,.4,1) infinite; animation-delay: calc(var(--i) * .012s); }
+@keyframes blasen {
+  0%   { opacity: 0; transform: translate(0, 0) scale(.6); }
+  6%   { opacity: 1; }
+  28%  { opacity: 1; transform: translate(calc(var(--x) * .35), var(--h)) scale(1); }
+  48%  { opacity: .7; transform: translate(var(--x), calc(var(--h) * .55)) scale(.9); }
+  60%  { opacity: 0; transform: translate(calc(var(--x) * 1.25), calc(var(--h) * .25)) scale(.7); }
+  100% { opacity: 0; transform: translate(calc(var(--x) * 1.25), calc(var(--h) * .25)) scale(.7); }
+}
+.seite > .box, .seite > div:not(.ueber-orca) { position: relative; z-index: 1; }
+.box.macher { display: flex; gap: 18px; align-items: center; }
+.macher b { font-size: 15px; }
+.kontakte { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.kontakte .mono { color: var(--text); }
+.orca-gross.klein { width: 84px; height: 44px; flex: none; }
+.orca-gross.klein svg { width: 100%; height: 100%; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--akzent) 45%, transparent)); animation: schwimmen 3.4s ease-in-out infinite; }
+.dialog .code-box pre { max-height: 220px; overflow: auto; }
+.sim-hinweis { font-size: 12px; color: var(--gelb); border: 1px solid color-mix(in srgb, var(--gelb) 45%, transparent); background: color-mix(in srgb, var(--gelb) 10%, transparent); border-radius: 8px; padding: 4px 10px; }
+#gemessen.misst::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--akzent); margin-right: 7px; vertical-align: 1px; animation: puls 1.1s ease-in-out infinite; }
+@keyframes puls { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+.scan-zeile .zahl { text-align: right; font-variant-numeric: tabular-nums; color: var(--sehrleise); }
+
+.leer { grid-column: 1 / -1; text-align: center; color: var(--leise); padding: 70px 20px; }
+.leer .mini-orca { width: 84px; height: 44px; margin: 0 auto 14px; animation: quer 6s ease-in-out infinite; opacity: .7; }
+@keyframes quer { 0% { transform: translateX(-18px); } 48% { transform: translateX(18px); } 50% { transform: translateX(18px) scaleX(-1); } 98% { transform: translateX(-18px) scaleX(-1); } 100% { transform: translateX(-18px); } }
+.toast { position: fixed; top: 18px; left: 50%; translate: -50% 0; z-index: 50; display: flex; gap: 10px; align-items: center; background: var(--flaeche-2); border: 1px solid var(--linie-2); padding: 9px 15px; border-radius: 11px; box-shadow: var(--schatten); font-size: 13.5px; transition: opacity .3s, transform .3s; }
+.toast svg { width: 13px; height: 11px; color: var(--akzent); }
+.toast.weg { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+.seite { max-width: 820px; display: flex; flex-direction: column; gap: 18px; }
+.seite .box p { margin: 6px 0 0; }
+.liste-k { display: flex; flex-direction: column; gap: 8px; }
+.zeile-k { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--linie); border-radius: 11px; background: var(--flaeche); }
+.zeile-k .mitte { flex: 1; min-width: 0; }
+.zeile-k .mitte b { font-weight: 600; font-size: 14px; }
+.zeile-k .mitte div { font-size: 12.5px; color: var(--sehrleise); }
+.zeile-k .mitte.erklaerbar { cursor: help; }
+.zeile-k .mitte.erklaerbar b::after { content: "ⓘ"; margin-left: 6px; font-weight: 400; font-size: 12px; color: var(--sehrleise); }
+.zeile-k .mitte.erklaerbar:hover b { color: var(--akzent); }
+.abschnitt #btnNeuesAlle { margin-left: auto; }
+.neu-liste { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.neu-liste li { display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: var(--leise); }
+.neu-liste li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.erkl-text { max-height: 52vh; overflow: auto; padding-right: 6px; }
+.erkl-text p, .erkl-text li { font-size: 13px; line-height: 1.55; }
+.erkl-text ul { margin: 4px 0 10px; padding-left: 18px; }
+
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .app { grid-template-columns: 1fr; height: auto; }
+  .nav { border-right: 0; border-bottom: 1px solid var(--linie); }
+  .nav-scroll { max-height: 230px; }
+  .kopf, .inhalt { padding-left: 16px; padding-right: 16px; }
+  .raster, .dash { grid-template-columns: 1fr; }
+  .leiste { left: 16px; right: 16px; translate: none; flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div class="meer" aria-hidden="true">
+  <svg class="welle" viewBox="0 0 2880 170" preserveAspectRatio="none"><path fill="var(--welle)" d="M0 100 C 240 60 480 140 720 100 S 1200 60 1440 100 S 1920 140 2160 100 S 2640 60 2880 100 V170 H0Z"/></svg>
+  <svg class="flosse-weit" viewBox="0 0 6 5" shape-rendering="crispEdges"><path fill="var(--sehrleise)" d="M1 0h1v1H1zM1 1h2v1H1zM1 2h3v1H1zM0 3h5v1H0z"/></svg>
+</div>
+
+<!-- Pixel-Orca als wiederverwendbares Symbol -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="orca" viewBox="0 0 34 18" shape-rendering="crispEdges">
+      <path fill="var(--orca-koerper)" d="M14 2h2v1H14zM15 3h3v1H15zM15 4h4v1H15zM16 5h3v1H16zM14 6h10v1H14zM3 7h1v1H3zM10 7h18v1H10zM4 8h1v1H4zM8 8h22v1H8zM5 9h26v1H5zM5 10h27v1H5zM5 11h27v1H5zM5 12h2v1H5zM8 12h22v1H8zM4 13h2v1H4zM13 13h14v1H13zM3 14h2v1H3z"/>
+      <path fill="var(--orca-glanz)" d="M15 2h1v1H15zM16 3h2v1H16zM18 4h1v1H18zM19 6h5v1H19zM11 7h3v1H11zM24 7h4v1H24zM28 8h2v1H28zM30 9h1v1H30z"/>
+      <path fill="var(--orca-weiss)" d="M30 11h2v1H30zM13 12h17v1H13zM17 13h10v1H17z"/>
+      <path class="auge" fill="var(--orca-weiss)" d="M25 8h3v1H25zM24 9h3v1H24z"/>
+      <path fill="var(--akzent)" d="M29 10h1v1H29z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="nav">
+    <div class="marke" id="marke">
+      <div class="orca" id="logoOrca"><svg viewBox="0 0 34 18"><use href="#orca"/></svg>
+        <span class="fontaene"><i style="left:2px;top:6px"></i><i style="left:0;top:3px"></i><i style="left:4px;top:3px"></i><i style="left:2px;top:0"></i></span>
+      </div>
+      <div><b>OrcaShield</b><small id="versionZeile">–</small></div>
+    </div>
+    <div class="ring-box" id="ringBox" data-tip-unten data-tip="Anteil der empfohlenen Einstellungen (Stufen Basis bis Maximal), die auf diesem Rechner aktiv sind. Sicherheitsrisiken und Zusatzoptionen zählen nicht mit.">
+      <div class="ring" id="ring"><span id="ringZahl">–</span><div class="spitze"></div></div>
+      <div class="zeilen" id="ringText"></div>
+    </div>
+    <div class="nav-scroll">
+      <div id="navOben"></div>
+      <h4 data-t="bereiche">Bereiche</h4>
+      <div id="navKategorien"></div>
+      <h4 data-t="mehr">Mehr</h4>
+      <div id="navMehr"></div>
+    </div>
+    <div class="nav-fuss">
+      <button class="sendet-nichts" id="btnSendetNichts" data-tip="Keine Telemetrie, kein Konto, keine Verbindung ins Internet. Alles bleibt auf diesem Rechner.">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span data-t="sendetNichts">OrcaShield sendet keine Daten.</span>
+      </button>
+      <button class="knopf" id="btnAnpassen" style="justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+        <span data-t="anpassen">Anpassen</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="haupt">
+    <header class="kopf">
+      <div class="kopf-oben">
+        <div class="verlauf-wrap">
+          <button class="klein-knopf" id="btnVerlauf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg><span data-t="verlauf">Verlauf</span> ▾</button>
+          <div class="verlauf-drop" id="verlaufDrop">
+            <div class="kopfzeile"><span data-t="letzteEreignisse">Letzte Ereignisse</span>
+              <button class="klein-knopf" id="btnVerlaufGross" title="Ganzer Verlauf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button></div>
+            <div class="liste" id="verlaufListe"></div>
+          </div>
+        </div>
+        <button class="klein-knopf" id="btnStand" data-tip-unten data-tip="Misst alle Einstellungen neu und zeigt, was sich seit der letzten Prüfung geändert hat."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span data-t="standPruefen">Aktualisieren</span></button>
+        <span class="sim-hinweis" id="simHinweis" hidden data-tip-unten data-tip="Dieser Testbau arbeitet im Simulationsmodus: Alles läuft wie echt durch, es wird aber nichts am System verändert. Das Ergebnis zeigt, was geschrieben worden wäre.">Simulation – es wird nichts verändert</span>
+        <span class="leise" style="font-size:12px;margin-left:auto" id="gemessen"></span>
+      </div>
+      <div class="kopf-zeile">
+        <h1 id="titel">Übersicht<small id="untertitel"></small></h1>
+        <div class="suche">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="suche" type="search" placeholder="Suchen …" autocomplete="off">
+          <kbd>/</kbd><span class="platscher" id="platscher"></span>
+        </div>
+      </div>
+      <div class="chips" id="filterLeiste"></div>
+    </header>
+    <section class="inhalt" id="inhalt"><div class="breite" id="seite"></div></section>
+  </main>
+</div>
+
+<div class="leiste weg" id="leiste">
+  <div class="txt"><b id="nAenderungen">0</b> <span data-t="vorgemerkt">Änderungen ausstehend</span></div>
+  <button class="knopf still" id="btnVerwerfen" data-t="verwerfen">Verwerfen</button>
+  <button class="knopf voll" id="btnAnwenden"><span data-t="vorschauAnwenden">Prüfen &amp; anwenden</span></button>
+</div>
+
+<div class="schleier" id="schleier"><div class="dialog" id="dialog"></div></div>
+<div class="overlay" id="overlay"></div>
+
+<aside class="schublade" id="schublade">
+  <h2 data-t="anpassen">Anpassen</h2>
+  <div class="feld"><label data-t="sprache">Sprache</label><div class="segment" data-opt="sprache"><button data-v="de">Deutsch</button><button data-v="en">English</button></div></div>
+  <div class="feld"><label data-t="erscheinung">Erscheinungsbild</label><div class="segment" data-opt="theme"><button data-v="dark" data-t="dunkel">Dunkel</button><button data-v="light" data-t="hell">Hell</button><button data-v="system" data-t="system">System</button></div></div>
+  <div class="feld"><label data-t="akzent">Akzentfarbe</label><div class="farben" id="farben"></div></div>
+  <div class="feld"><label data-t="dichte">Dichte</label><div class="segment" data-opt="dichte"><button data-v="kompakt" data-t="kompakt">Kompakt</button><button data-v="normal" data-t="normal">Normal</button><button data-v="luftig" data-t="luftig">Luftig</button></div></div>
+  <div class="feld"><label data-t="spaltenKat">Spalten – Kategorien</label><div class="segment" data-opt="spaltenKat"><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div></div>
+  <div class="feld"><label data-t="spaltenEin">Spalten – Einstellungen</label><div class="segment" data-opt="spalten"><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div></div>
+  <div class="feld"><label data-t="ansicht">Ansicht</label><div class="segment" data-opt="ansicht"><button data-v="raster" data-t="kacheln">Kacheln</button><button data-v="liste" data-t="liste">Liste</button></div></div>
+  <div class="feld"><label data-t="ecken">Ecken</label><div class="segment" data-opt="ecken"><button data-v="eckig" data-t="eckig">Eckig</button><button data-v="normal" data-t="weich">Weich</button><button data-v="rund" data-t="rund">Rund</button></div></div>
+  <div class="feld"><label><span data-t="schriftgroesse">Schriftgröße</span> <span id="schriftWert"></span></label><input type="range" id="schrift" min="13" max="19" step="1"></div>
+  <div class="feld"><label data-t="technik">Technische Angaben</label><div class="segment" data-opt="technik"><button data-v="an" data-t="zeigen">Zeigen</button><button data-v="aus" data-t="ausblenden">Ausblenden</button></div></div>
+  <div class="feld"><label data-t="bewegung">Bewegung</label><div class="segment" data-opt="bewegung"><button data-v="an" data-t="an">An</button><button data-v="aus" data-t="aus">Aus</button></div></div>
+  <div class="feld"><label data-t="wellen">Wellen im Hintergrund</label><div class="segment" data-opt="wellen"><button data-v="an" data-t="an">An</button><button data-v="aus" data-t="aus">Aus</button></div></div>
+  <button class="knopf still" id="btnZuruecksetzen" style="align-self:flex-start" data-t="vorgabe">Auf Vorgabe zurücksetzen</button>
+  <p class="leise" style="font-size:12px;margin:0" data-t="speicherHinweis">Wird nur in diesem Browser gespeichert.</p>
+</aside>
+
+<div class="tipp" id="tipp" role="tooltip"></div>
+<div class="toast weg" id="toast"><svg viewBox="0 0 6 5" shape-rendering="crispEdges"><path fill="currentColor" d="M1 0h1v1H1zM1 1h2v1H1zM1 2h3v1H1zM0 3h5v1H0z"/></svg><span id="toastText"></span></div>
+
+<script src="orca-texte-en.js"></script>
+<script src="orca-daten.js"></script>
+<script>
+"use strict";
+// Fehler sichtbar machen statt einer leeren Seite
+window.addEventListener("error", e => { const d = document.createElement("pre"); d.style.cssText = "position:fixed;left:280px;right:20px;bottom:20px;z-index:99;background:#2a1416;color:#ffb4ac;padding:12px;border-radius:10px;font:12px Consolas;white-space:pre-wrap"; d.textContent = "Fehler: " + e.message + " (Zeile " + e.lineno + ")"; document.body.appendChild(d); });
+// ==============================================================
+//  Texte der Oberfläche (Deutsch / Englisch). Die Einstellungen der
+//  Leiste "Anpassen" stehen in T; alles andere übersetzt UEB weiter unten.
+// ==============================================================
+const T = {
+  de: { kategorien: "Kategorien", mehr: "Mehr", sendetNichts: "OrcaShield sendet keine Daten.", anpassen: "Anpassen",
+    verlauf: "Verlauf", letzteEreignisse: "Letzte Ereignisse", standPruefen: "Aktualisieren", vorgemerkt: "Änderungen ausstehend", verwerfen: "Verwerfen",
+    vorschauAnwenden: "Prüfen & anwenden", sprache: "Sprache", erscheinung: "Erscheinungsbild", dunkel: "Dunkel", hell: "Hell", system: "System",
+    akzent: "Akzentfarbe", dichte: "Dichte", kompakt: "Kompakt", normal: "Normal", luftig: "Luftig", ansicht: "Ansicht", kacheln: "Kacheln", liste: "Liste",
+    ecken: "Ecken", eckig: "Eckig", weich: "Weich", rund: "Rund", schriftgroesse: "Schriftgröße", technik: "Technische Angaben", zeigen: "Zeigen",
+    ausblenden: "Ausblenden", bewegung: "Bewegung", an: "An", aus: "Aus", wellen: "Wellen im Hintergrund", vorgabe: "Auf Vorgabe zurücksetzen",
+    speicherHinweis: "Wird nur in diesem Browser gespeichert.", uebersicht: "Kategorien", suchen: "Suchen …",
+    dashboard: "Dashboard", bereiche: "Bereiche", spaltenKat: "Spalten – Kategorien", spaltenEin: "Spalten – Einstellungen",
+    gruen: "Basis", gelb: "Erweitert", rot: "Maximal", individuell: "Individuell", spalten: "Spalten" },
+  en: { kategorien: "Categories", mehr: "More", sendetNichts: "OrcaShield sends no data.", anpassen: "Customize",
+    verlauf: "History", letzteEreignisse: "Recent events", standPruefen: "Refresh", vorgemerkt: "pending changes", verwerfen: "Discard",
+    vorschauAnwenden: "Review & apply", sprache: "Language", erscheinung: "Appearance", dunkel: "Dark", hell: "Light", system: "System",
+    akzent: "Accent color", dichte: "Density", kompakt: "Compact", normal: "Normal", luftig: "Airy", ansicht: "View", kacheln: "Tiles", liste: "List",
+    ecken: "Corners", eckig: "Square", weich: "Soft", rund: "Round", schriftgroesse: "Font size", technik: "Technical details", zeigen: "Show",
+    ausblenden: "Hide", bewegung: "Motion", an: "On", aus: "Off", wellen: "Background waves", vorgabe: "Reset to defaults",
+    speicherHinweis: "Stored in this browser only.", uebersicht: "Categories", suchen: "Search …",
+    dashboard: "Dashboard", bereiche: "Areas", spaltenKat: "Columns – categories", spaltenEin: "Columns – settings",
+    gruen: "Basic", gelb: "Extended", rot: "Maximum", individuell: "Custom", spalten: "Columns" },
+};
+let SP = "de";
+const t = k => (T[SP] && T[SP][k]) || T.de[k] || k;
+
+const UEB = (() => {
+  const genau = new Map(), muster = [];
+  let katalogVon = null, aktiv = false, eigen = false;
+  const ATTR = ["title", "data-tip", "placeholder", "aria-label"];
+  const nimm = (de, en) => {
+    if (!de || !en || (de === en && !de.includes("{}"))) return;
+    if (de.includes("{}")) {
+      const teile = de.split("{}").map(x => x.replace(/[.*+?^$()|[\]\\]/g, "\\$&"));
+      const vorn = de.split("{}")[0];
+      // Langer fester Text = eindeutiges Muster: dann dürfen die Werte auch lange Namen sein
+      const fest = de.replace(/\{\}/g, "").replace(/[\s\d.,:·–\-()]/g, "").length;
+      muster.push({ re: new RegExp("^" + teile.join("([\\s\\S]*?)") + "$"), en, vorn, fest });
+    } else {
+      genau.set(de, en);
+      if (de.startsWith("- ")) genau.set(de.slice(2), en.replace(/^- /, ""));
+    }
+  };
+  for (const [de, en] of Object.entries(window.ORCA_UI_EN || {})) nimm(de, en);
+  // Längere Muster zuerst (genauer)
+  muster.sort((a, b) => b.vorn.length - a.vorn.length);
+  const katalog = () => {
+    const k = D && D.texteEn;
+    if (!k || k === katalogVon) return;
+    katalogVon = k;
+    for (const [de, en] of Object.entries(k)) if (!genau.has(de)) genau.set(de, en);
+  };
+  // strikt: nur Wörterbuch und Muster, ohne Zerlegen an Trennzeichen (für eingesetzte Werte)
+  function text(s, tiefe = 0, strikt = false) {
+    if (!s || tiefe > 3 || !/[A-Za-zÄÖÜäöüß]{2}/.test(s)) return null;
+    const ws = s.match(/^(\s*)([\s\S]*?)(\s*)$/), kern = ws[2];
+    let r = genau.get(kern);
+    if (r === undefined) {
+      // Kennung vorneweg ("NET005  Name")
+      const id = /^([A-Z]{2,4}\d{3}\s+)([\s\S]+)$/.exec(kern);
+      const e = id && text(id[2], tiefe + 1, strikt);
+      if (e !== null && e !== undefined && id) r = id[1] + e.trim();
+    }
+    if (r === undefined) {
+      for (const m of muster) {
+        if (m.vorn && !kern.startsWith(m.vorn)) continue;
+        const x = m.re.exec(kern);
+        if (!x) continue;
+        // Eingesetzte Werte müssen Zahlen, kurze Namen oder selbst übersetzbar sein –
+        // sonst passte z. B. "{} von {}" auf jeden deutschen Satz mit "von".
+        const werte = x.slice(1).map(v => ({ v, e: text(v, tiefe + 1, true) }));
+        if (m.fest < 15 && !werte.every(w => w.e !== null || /^[\d\s.,:%×+\-–/()]*$/.test(w.v) || w.v.trim().split(/\s+/).length <= 3)) continue;
+        let i = 0;
+        r = m.en.replace(/\{\}/g, () => { const w = werte[i++]; return w.e ?? w.v; });
+        break;
+      }
+    }
+    if (r === undefined && !strikt) {
+      // Zusammengesetzte Texte: "A · B", "A | B", "Titel: Inhalt", "A – B"
+      const teile = kern.split(" | ");
+      if (teile.length > 1) {
+        const e = teile.map(t => text(t, tiefe + 1));
+        if (e.some(x => x !== null)) r = e.map((x, i) => x ?? teile[i]).join(" | ");
+      }
+    }
+    if (r === undefined && !strikt) {
+      // Mehrere Sätze hintereinander (z. B. Auswirkung + Stufe + Überwachung)
+      const saetze = kern.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ„"])/);
+      if (saetze.length > 1) {
+        const e = saetze.map(t => text(t, tiefe + 1, true));
+        if (e.every(x => x !== null)) r = e.join(" ");
+      }
+    }
+    if (r === undefined && !strikt) {
+      for (const tr of [" · ", ": ", " – ", " → "]) {
+        const pos = kern.indexOf(tr);
+        if (pos < 0) continue;
+        const a = kern.slice(0, pos), b = kern.slice(pos + tr.length);
+        const ea = genau.get(a + tr.trim()) !== undefined && tr === ": " ? genau.get(a + ":").replace(/:$/, "") : text(a, tiefe + 1);
+        const eb = text(b, tiefe + 1);
+        if (ea !== null || eb !== null) { r = (ea ?? a) + tr + (eb ?? b); break; }
+      }
+    }
+    return r === undefined ? null : ws[1] + r + ws[3];
+  }
+  const ueberspringen = el => el && el.closest && el.closest("pre, code, script, style, textarea, .roh");
+  function knoten(n) {
+    if (n.nodeType === 3) {
+      if (ueberspringen(n.parentElement)) return;
+      const jetzt = n.nodeValue;
+      if (n.__en !== undefined && jetzt === n.__en) return;   // schon übersetzt
+      n.__de = jetzt;
+      const e = text(jetzt);
+      if (e !== null && e !== jetzt) { n.__en = e; eigen = true; n.nodeValue = e; eigen = false; }
+      else n.__en = undefined;
+      return;
+    }
+    if (n.nodeType !== 1 || ueberspringen(n)) return;
+    for (const a of ATTR) {
+      if (!n.hasAttribute(a)) continue;
+      const v = n.getAttribute(a), merk = "__de_" + a, en = "__en_" + a;
+      if (n[en] !== undefined && v === n[en]) continue;
+      n[merk] = v;
+      const e = text(v);
+      if (e !== null && e !== v) { n[en] = e; eigen = true; n.setAttribute(a, e); eigen = false; }
+    }
+    for (let c = n.firstChild; c; c = c.nextSibling) knoten(c);
+  }
+  function zurueck(n) {
+    if (n.nodeType === 3) { if (n.__en !== undefined && n.nodeValue === n.__en) { eigen = true; n.nodeValue = n.__de; eigen = false; } n.__en = undefined; return; }
+    if (n.nodeType !== 1) return;
+    for (const a of ATTR) if (n["__en_" + a] !== undefined) { if (n.getAttribute(a) === n["__en_" + a]) { eigen = true; n.setAttribute(a, n["__de_" + a]); eigen = false; } n["__en_" + a] = undefined; }
+    for (let c = n.firstChild; c; c = c.nextSibling) zurueck(c);
+  }
+  const wache = new MutationObserver(liste => {
+    if (eigen || !aktiv) return;
+    katalog();
+    for (const m of liste) {
+      if (m.type === "childList") m.addedNodes.forEach(knoten);
+      else if (m.type === "characterData") knoten(m.target);
+      else if (m.type === "attributes") knoten(m.target);
+    }
+  });
+  return {
+    // Sprache gewechselt (oder neue Messdaten): ganze Seite übersetzen bzw. zurückstellen
+    setze(sp) {
+      const neu = sp === "en";
+      if (neu) { katalog(); aktiv = true; knoten(document.body); document.title = "OrcaShield"; }
+      else if (aktiv) { aktiv = false; zurueck(document.body); }
+      wache.disconnect();
+      if (aktiv) wache.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTR });
+    },
+    text: s => (aktiv ? text(s) : null),
+    // Für die Suche: englische Fassung eines Katalogtexts (oder "")
+    en: s => { katalog(); return (s && genau.get(s)) || ""; },
+  };
+})();
+
+// ==============================================================
+//  Daten und Zustand
+// ==============================================================
+// Im Programm (OrcaShield.exe) kommen die Messdaten live von der Engine über
+// die Brücke; im Browser-Entwurf aus orca-daten.js (Werkzeuge\Gui-Daten.ps1).
+const APP = !!(window.chrome && window.chrome.webview);
+let SIMULATION = true;   // bis das Programm etwas anderes meldet: vorsichtig annehmen
+// Brücke zum Programm: feste Aktionen, Antwort per Kennung, Zwischenstände
+// (fortschritt) unterwegs. Die Seite schickt nie Befehlstext, nur Aktionsnamen.
+const bruecke = (() => {
+  let nr = 0;
+  const offen = new Map();
+  if (APP) window.chrome.webview.addEventListener("message", e => {
+    const m = e.data, o = m && offen.get(m.id);
+    if (!o) return;
+    if (m.fortschritt) { if (o.f) o.f(m.fortschritt); return; }
+    offen.delete(m.id);
+    if (m.ok) o.ok(m.ergebnis); else o.nein(new Error(m.fehler || "Unbekannter Fehler"));
+  });
+  return (aktion, daten = {}, f = null) => new Promise((ok, nein) => {
+    if (!APP) return nein(new Error("Nur im Programm verfügbar"));
+    const id = ++nr;
+    offen.set(id, { ok, nein, f });
+    window.chrome.webview.postMessage(JSON.stringify({ id, aktion, daten }));
+  });
+})();
+const PROTOKOLL = [];
+function protokoll(art, text = "") {
+  const z = new Date();
+  const zeit = z.toTimeString().slice(0, 8) + "." + String(z.getMilliseconds()).padStart(3, "0");
+  PROTOKOLL.push(`${zeit} | ${String(art).padEnd(10)} | ${String(text).replace(/\s+/g, " ").slice(0, 500)}`);
+  if (!APP) return;
+  if (PROTOKOLL.length >= 250) return protokollSenden();
+  clearTimeout(protokoll.uhr); protokoll.uhr = setTimeout(protokollSenden, 900);
+}
+function protokollSenden() {
+  if (!APP || !PROTOKOLL.length) return;
+  bruecke("protokoll", { eintraege: PROTOKOLL.splice(0, 300) }).catch(() => { });
+}
+window.addEventListener("pagehide", protokollSenden);
+window.addEventListener("error", e => protokoll("fehler", `${e.message} (Zeile ${e.lineno}:${e.colno})`));
+window.addEventListener("unhandledrejection", e => protokoll("fehler", "Unbehandelt: " + (e.reason && e.reason.message || e.reason)));
+// Jeder Klick mit Zusammenhang: was (Knopf, Schalter, Karte …), wo (Seite), welche Kennung
+function beschreibe(el) {
+  const teile = [el.tagName.toLowerCase() + (el.id ? "#" + el.id : "")];
+  for (const k of ["art", "wert", "a", "s", "filter", "opt", "v", "kat", "kopie", "r", "assistent", "bereich", "erkl", "link",
+                   "profFest", "prof", "profWeg", "profExport", "profFarbe", "snapZu", "snapWeg", "neuArt", "neuNr", "sammlerAus", "sammlerZurueck", "app", "appStufe",
+                   "richtlinieAus", "richtlinieZurueck", "ohneSperre"])if (el.dataset && el.dataset[k]) teile.push(`${k}=${el.dataset[k]}`);
+  const karte = el.closest(".karte[data-id]"); if (karte) teile.push("punkt=" + karte.dataset.id);
+  const kachel = el.closest("[data-kat]"); if (kachel && !el.dataset.kat) teile.push("bereich=" + kachel.dataset.kat);
+  const option = el.closest("[data-opt]"); if (option && !el.dataset.opt) teile.push("anpassen=" + option.dataset.opt);
+  if (el.type === "checkbox") teile.push(el.checked ? "an" : "aus");
+  const t = (el.getAttribute("aria-label") || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 60);
+  if (t) teile.push(`„${t}“`);
+  return teile.join(" · ") + ` · seite=${typeof ansicht !== "undefined" ? ansicht.art + (ansicht.wert ? ":" + ansicht.wert : "") : "?"}`;
+}
+document.addEventListener("click", e => {
+  const el = e.target.closest("button, a, input, select, .nav-punkt, .karte-text, .karte-erkl, .kachel-k, .db-zeile, .ring-box, [data-erkl]");
+  if (el) protokoll("klick", beschreibe(el));
+}, true);
+let D = null;
+const SEITEN_VERSION = "1.0.0 Public Beta";
+let PRODUKT = SEITEN_VERSION, PUNKTE = [], KATS = [], KAT = {};
+function datenUebernehmen(d) {
+  D = d || null;
+  PRODUKT = (D && D.produkt) || (D && /^Beta|Public Beta$/.test(D.version) ? D.version : SEITEN_VERSION);
+  PUNKTE = D ? D.punkte.filter(p => !p.ausgemustert) : [];
+  KATS = D ? D.kategorien.filter(k => PUNKTE.some(p => p.kategorie === k.name)) : [];
+  KAT = Object.fromEntries((D ? D.kategorien : []).map(k => [k.name, k]));
+}
+datenUebernehmen(APP ? null : (window.ORCA_DATEN || null));
+const vorgemerkt = new Map();            // id -> true (einschalten) / false (zurücknehmen)
+const waechterVorgemerkt = new Map();    // bereich -> true / false
+const assistentVorgemerkt = new Map();   // "waechter" | "herunterfahren" -> true / false
+let ansicht = { art: "dashboard", wert: null };
+let filter = "alle";
+let suchtext = "";
+
+const ICO = {
+  Telemetrie: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+  Werbung: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  "KI-Funktionen": '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/>',
+  Vorschlaege: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  Explorer: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  "App-Berechtigungen": '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  Suche: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  Standort: '<path d="M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>',
+  Eingabe: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+  Updates: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  Konto: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  Office: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  Edge: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  Defender: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  Gaming: '<rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 10v4M5 12h4M16 11h.01M18 13h.01"/>',
+  Netzwerk: '<circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/>',
+  Sicherheit: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  Spuren: '<path d="M19 3 9 13M7 13l4 4-2 4-7-7 4-2z"/>',
+  Leistung: '<path d="M12 14l4-4"/><path d="M3.3 17a9 9 0 1 1 17.4 0"/>',
+  Experimentell: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/>',
+  dashboard: '<path d="M3.5 15a8.5 8.5 0 1 1 17 0"/><path d="M12 15l4.5-4.5"/><circle cx="12" cy="15" r="1.2"/><path d="M5 20h14"/>',
+  start: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  alle: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  waechter: '<path d="M2 12c2.5-3 5-3 7.5 0s5 3 7.5 0 3.5-2 5-1"/><path d="M2 17c2.5-3 5-3 7.5 0s5 3 7.5 0 3.5-2 5-1"/>',
+  schnapp: '<rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/>',
+  profile: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
+  bekannt: '<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>',
+  ueber: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+  verlaufI: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  apps: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17.5h7"/>',
+  kennung: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2.5"/><path d="M14 10h4M14 14h4"/>',
+};
+const svg = (n, cls = "ico") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICO[n] || ICO.alle}</svg>`;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const orcaSvg = (cls = "") => `<svg class="${cls}" viewBox="0 0 34 18"><use href="#orca"/></svg>`;
+const katName = k => KAT[k]?.anzeige || k;
+
+// ==============================================================
+//  Zustand eines Punkts
+// ==============================================================
+const istAn = p => vorgemerkt.has(p.id) ? vorgemerkt.get(p.id) : p.status === "Erfuellt";
+const bedienbar = p => p.status === "Erfuellt" || p.status === "Abweichend";
+// Empfohlen = Teil der Schutzstufen: keine Sicherheitsrisiken, kein Zusatz, nichts aus Experimentell
+const empfohlen = p => !p.senktSchutz && p.stufe !== "Zusatz" && p.stufe !== "Experimentell";
+const nurEinzeln = p => p.senktSchutz || p.grautAus || p.vorgabeNein || (p.benoetigtVon && p.benoetigtVon.length);
+const STUFE_ERLAUBT = { gruen: ["Light"], gelb: ["Light", "Standard"], rot: ["Light", "Standard", "Maximum"] };
+const gehoertZu = (p, s) => empfohlen(p) && STUFE_ERLAUBT[s].includes(p.stufe);
+// Farbe einer Karte = ihre Schutzstufe; Zusatz und Experimentell nach ihrem Eingriff
+const stufenFarbe = p => ({ Light: "Keiner", Standard: "Leicht", Maximum: "Tief" })[p.stufe] || p.eingriff;
+
+function nichtVerfuegbarGrund(p) {
+  const g = p.grund || "";
+  if (/Edition|Enterprise|Education/i.test(g)) return "Wirkt nur auf anderen Windows-Editionen.";
+  if (/Schlüssel.*existiert|nicht vorhanden|gibt es/i.test(g)) return "Diese Funktion gibt es auf diesem Gerät nicht – der Schalter wird nicht angelegt.";
+  if (/Manipulationsschutz/i.test(g)) return "Windows-Sicherheit schützt diesen Wert (Manipulationsschutz).";
+  return g || "Auf diesem Gerät nicht verfügbar.";
+}
+
+// Stufe einer Kategorie: welche Voreinstellung entspricht genau dem Stand?
+// Zuletzt gewählte Stufe je Bereich: Wählen in einem Bereich zwei Stufen dasselbe (es gibt dort
+// z. B. keine Maximal-Punkte), bleibt die gewählte markiert statt der höchsten.
+const gewaehlteStufe = new Map();
+function stufeDerKategorie(kat) {
+  const l = PUNKTE.filter(p => p.kategorie === kat && bedienbar(p) && empfohlen(p));
+  const w = gewaehlteStufe.get(kat);
+  if (w && l.every(p => istAn(p) === gehoertZu(p, w))) return w;
+  for (const s of ["rot", "gelb", "gruen"]) {
+    if (l.every(p => istAn(p) === gehoertZu(p, s))) return s;
+  }
+  return "individuell";
+}
+function setzeStufe(kat, s) {
+  protokoll("stufe", `${kat} → ${s}`);
+  gewaehlteStufe.set(kat, s);
+  for (const p of PUNKTE.filter(x => x.kategorie === kat && bedienbar(x) && empfohlen(x))) merke(p, gehoertZu(p, s));
+}
+function merke(p, ziel) {
+  const ursprung = p.status === "Erfuellt";
+  const vorher = vorgemerkt.get(p.id);
+  if (ziel === ursprung) vorgemerkt.delete(p.id); else vorgemerkt.set(p.id, ziel);
+  if (vorgemerkt.get(p.id) !== vorher) {
+    orcaMoment();
+    protokoll("vormerken", `${p.id} → ${vorgemerkt.has(p.id) ? (ziel ? "aktivieren" : "zurücksetzen") : "Vormerkung aufgehoben"} (Status ${p.status})`);
+  }
+}
+// Bei jeder Änderung macht der Orca im Logo einen kleinen Hüpfer mit Fontäne.
+// Viele Änderungen auf einmal (eine ganze Stufe) ergeben einen einzigen Hüpfer.
+function orcaMoment() {
+  clearTimeout(orcaMoment.t);
+  orcaMoment.t = setTimeout(() => {
+    const l = document.getElementById("logoOrca");
+    if (!l || l.classList.contains("sprung")) return;
+    l.classList.remove("hopser"); void l.offsetWidth; l.classList.add("hopser");
+    setTimeout(() => l.classList.remove("hopser"), 1400);
+  }, 30);
+}
+function stufenText(kat, s) {
+  const l = PUNKTE.filter(p => p.kategorie === kat && bedienbar(p) && !p.senktSchutz);
+  const n = STUFE_ERLAUBT[s] ? l.filter(p => gehoertZu(p, s)).length : 0;
+  const np = `${n} ${n === 1 ? "Einstellung" : "Einstellungen"}`;
+  return {
+    gruen: `${np} · das Wichtigste, ohne Nebenwirkungen`,
+    gelb: `${np} · empfohlen, ohne spürbare Nachteile`,
+    rot: `${np} · zusätzlich mit spürbarer Folge`,
+    individuell: "Einstellungen einzeln festlegen",
+  }[s];
+}
+
+// ==============================================================
+//  PowerShell-Befehle je Punkt (einschalten / rückgängig)
+// ==============================================================
+function psWert(v, typ) {
+  if (v === null || v === undefined) return "$null";
+  if (/^(DWord|QWord)$/i.test(typ) && /^-?\d+$/.test(String(v))) return String(v);
+  return "'" + String(v).replace(/'/g, "''") + "'";
+}
+function befehle(p) {
+  const pfad = p.pfad, w = p.wert, typ = p.regTyp || "DWord", b = p.basis;
+  const regSetzen = (wert, rt) => `if (-not (Test-Path '${pfad}')) { New-Item -Path '${pfad}' -Force | Out-Null }\nSet-ItemProperty -Path '${pfad}' -Name '${w}' -Value ${psWert(wert, rt)} -Type ${rt}`;
+  switch (p.typ) {
+    case "Registry": case "Autologger": {
+      const an = regSetzen(p.soll, typ);
+      let zurueck;
+      if (b && b.vorhanden && b.wert !== null) zurueck = regSetzen(b.wert, b.regTyp || typ);
+      else if (b && !b.vorhanden) zurueck = `Remove-ItemProperty -Path '${pfad}' -Name '${w}' -ErrorAction SilentlyContinue`;
+      else zurueck = `# Ausgangswert noch nicht gemessen – Windows-Vorgabe:\nRemove-ItemProperty -Path '${pfad}' -Name '${w}' -ErrorAction SilentlyContinue`;
+      return { an, zurueck };
+    }
+    case "Dienst":
+      return { an: `Stop-Service -Name '${w}' -Force -ErrorAction SilentlyContinue\nSet-Service -Name '${w}' -StartupType Disabled`,
+               zurueck: `Set-Service -Name '${w}' -StartupType ${b && b.wert ? b.wert : "Manual"}` };
+    case "Aufgabe": {
+      const i = w.lastIndexOf("\\"), tp = w.slice(0, i + 1), tn = w.slice(i + 1);
+      return { an: `Disable-ScheduledTask -TaskPath '${tp}' -TaskName '${tn}'`, zurueck: `Enable-ScheduledTask -TaskPath '${tp}' -TaskName '${tn}'` };
+    }
+    case "Feature":
+      return { an: `Disable-WindowsOptionalFeature -Online -FeatureName '${w}' -NoRestart`, zurueck: `Enable-WindowsOptionalFeature -Online -FeatureName '${w}' -NoRestart` };
+    case "Hypervisor":
+      return { an: `bcdedit /set '{current}' hypervisorlaunchtype off`, zurueck: `bcdedit /set '{current}' hypervisorlaunchtype auto` };
+    case "NetBios":
+      return { an: `Get-CimInstance Win32_NetworkAdapterConfiguration -Filter 'IPEnabled=TRUE' |\n  Invoke-CimMethod -MethodName SetTcpipNetbios -Arguments @{ TcpipNetbiosOptions = 2 }`,
+               zurueck: `Get-CimInstance Win32_NetworkAdapterConfiguration -Filter 'IPEnabled=TRUE' |\n  Invoke-CimMethod -MethodName SetTcpipNetbios -Arguments @{ TcpipNetbiosOptions = 0 }` };
+    case "Firewallregel":
+      return { an: `New-NetFirewallRule -DisplayName '${w}' -Direction Outbound -Service 'wlidsvc' -Action Block`, zurueck: `Remove-NetFirewallRule -DisplayName '${w}'` };
+    case "Computerschutz":
+      return { an: `Disable-ComputerRestore -Drive 'C:\\'`, zurueck: `Enable-ComputerRestore -Drive 'C:\\'` };
+    case "StartupApproved":
+      return { an: `Set-ItemProperty -Path '${pfad}' -Name '${w}' -Type Binary -Value ([byte[]](3,0,0,0) + [BitConverter]::GetBytes((Get-Date).ToFileTime()))`,
+               zurueck: `Set-ItemProperty -Path '${pfad}' -Name '${w}' -Type Binary -Value ([byte[]](2,0,0,0,0,0,0,0,0,0,0,0))` };
+    case "Dns":
+      return { an: `# Mehrere Schritte je Netzwerkkarte (DNS-Server und verschlüsseltes DNS):\nSet-DnsClientServerAddress -InterfaceAlias '<Karte>' -ServerAddresses 9.9.9.9,149.112.112.112`,
+               zurueck: `Set-DnsClientServerAddress -InterfaceAlias '<Karte>' -ResetServerAddresses` };
+    case "HostsBlock":
+      return { an: `# OrcaShield schreibt einen markierten Block in die Hosts-Datei:\n# C:\\Windows\\System32\\drivers\\etc\\hosts  (# >>> OrcaShield … # <<< OrcaShield)`,
+               zurueck: `# Den markierten OrcaShield-Block aus der Hosts-Datei entfernen – eigene Einträge bleiben.` };
+    case "DeviceGuard":
+      return { an: `# Prüfpunkt – setzt nichts. Nachsehen:\nGet-CimInstance -Namespace root\\Microsoft\\Windows\\DeviceGuard -ClassName Win32_DeviceGuard`, zurueck: `# Prüfpunkt – nichts zurückzunehmen.` };
+    default:
+      return { an: `# ${p.typ}: setzt OrcaShield in mehreren Schritten.`, zurueck: `# ${p.typ}: Rückbau über OrcaShield (gemessener Ausgangszustand).` };
+  }
+}
+
+// ==============================================================
+//  Kleinkram
+// ==============================================================
+function toast(text) {
+  const el = document.getElementById("toast");
+  document.getElementById("toastText").textContent = text;
+  el.classList.remove("weg"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.add("weg"), 2600);
+}
+function kopiere(text) {
+  try { navigator.clipboard.writeText(text).then(() => toast("Kopiert"), () => toast("Markieren und Strg+C")); }
+  catch { toast("Markieren und Strg+C"); }
+}
+const ABLAGE = { "orca-schnapp": "sicherungspunkte", "orca-profile": "profile" };
+const ablageStand = {};
+function laden(key, vorgabe) {
+  if (APP && key in ABLAGE) return key in ablageStand ? JSON.parse(JSON.stringify(ablageStand[key])) : vorgabe;
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : vorgabe; } catch { return vorgabe; }
+}
+function speichern(key, wert) {
+  if (APP && key in ABLAGE) {
+    ablageStand[key] = JSON.parse(JSON.stringify(wert));
+    bruecke("ablage", { art: ABLAGE[key], liste: wert })
+      .then(l => { ablageStand[key] = l; })
+      .catch(e => { protokoll("fehler", `Ablage ${ABLAGE[key]}: ${e.message}`); toast("Nicht gespeichert: " + e.message); ablageLaden(key).then(() => render()); });
+    return;
+  }
+  try { localStorage.setItem(key, JSON.stringify(wert)); } catch { }
+}
+// Beim Start lesen; was ältere Fassungen im Browser-Speicher hatten, wird einmal übernommen.
+function ablageLaden(key) {
+  return bruecke("ablage", { art: ABLAGE[key] }).then(l => {
+    let alt = []; try { alt = JSON.parse(localStorage.getItem(key) || "[]"); } catch { }
+    const weg = () => { try { localStorage.removeItem(key); } catch { } };
+    if (!l.length && Array.isArray(alt) && alt.length)   // erst nach gelungenem Schreiben aus dem Browser-Speicher löschen
+      return bruecke("ablage", { art: ABLAGE[key], liste: alt }).then(n => { ablageStand[key] = n; weg(); protokoll("ablage", `${n.length} ${ABLAGE[key]} aus dem Browser-Speicher übernommen`); });
+    ablageStand[key] = l; weg();
+  }).catch(e => { ablageStand[key] = []; protokoll("fehler", `Ablage ${ABLAGE[key]} lesen: ${e.message}`); toast(e.message); });
+}
+
+// ==============================================================
+//  Navigation
+// ==============================================================
+function navKnopf(art, wert, ico, text, zusatz = "") {
+  return `<button class="nav-punkt" data-art="${art}" ${wert ? `data-wert="${esc(wert)}"` : ""}>${svg(ico)}<span class="lbl">${esc(text)}</span>${zusatz}</button>`;
+}
+function baueNav() {
+  if (!D) return;   // vor der ersten Messung: Seitenleiste bleibt leer
+  document.getElementById("navOben").innerHTML =
+    navKnopf("dashboard", null, "dashboard", t("dashboard")) +
+    navKnopf("uebersicht", null, "start", t("uebersicht")) +
+    navKnopf("alle", null, "alle", "Alle Einstellungen", `<span class="zahl">${PUNKTE.length}</span>`);
+  document.getElementById("navKategorien").innerHTML = KATS.filter(k => k.name !== "Experimentell").map(k => {
+    const l = PUNKTE.filter(p => p.kategorie === k.name);
+    const offen = l.filter(p => bedienbar(p) && !istAn(p) && empfohlen(p)).length;
+    return navKnopf("kategorie", k.name, k.name, k.anzeige, `<span class="zahl ${offen ? "offen" : ""}">${l.length}</span>`);
+  }).join("");
+  document.getElementById("navMehr").innerHTML =
+    navKnopf("waechter", null, "waechter", "Überwachung & Automatik") +
+    navKnopf("apps", null, "apps", "Apps", `<span class="zahl">${((D.apps || {}).liste || []).filter(x => x.installiert).length}</span>`) +
+    navKnopf("kennung", null, "kennung", "Gerätekennung", (D.geraetekennung || {}).echt ? '<span class="zahl offen">1</span>' : "") +
+    navKnopf("schnapp", null, "schnapp", "Wiederherstellung") +
+    navKnopf("profile", null, "profile", "Profile") +
+    navKnopf("verlauf", null, "verlaufI", "Verlauf") +
+    navKnopf("bekannt", null, "bekannt", "Nicht unterstützt", `<span class="zahl">${(D.bekannt || []).length}</span>`) +
+    navKnopf("kategorie", "Experimentell", "Experimentell", "Experimentell", `<span class="zahl">${PUNKTE.filter(p => p.kategorie === "Experimentell").length || "–"}</span>`) +
+    navKnopf("ueber", null, "ueber", "Über & Lizenzen");
+  document.querySelectorAll(".nav-punkt").forEach(b => b.addEventListener("click", () => gehe(b.dataset.art, b.dataset.wert || null)));
+}
+function gehe(art, wert = null) {
+  protokoll("seite", art + (wert ? ":" + wert : ""));
+  // Dashboard, Kategorien und Alle Einstellungen liegen zusammen auf der Startseite.
+  if (EINSEITER.includes(art)) return springe(art);
+  ansicht = { art, wert };
+  filter = "alle";
+  render();
+  document.getElementById("inhalt").scrollTop = 0;
+}
+function markiereNav(art = ansicht.art, wert = ansicht.wert) {
+  document.querySelectorAll(".nav-punkt").forEach(b => b.classList.toggle("an", b.dataset.art === art && (b.dataset.wert || null) === wert));
+}
+
+// ==============================================================
+//  Seiten
+// ==============================================================
+function setzeKopf(titel, unter, mitFilter) {
+  document.getElementById("titel").firstChild.nodeValue = titel;
+  document.getElementById("untertitel").textContent = unter || "";
+  document.getElementById("filterLeiste").style.display = mitFilter ? "" : "none";
+}
+
+function render() {
+  markiereNav();
+  const s = document.getElementById("seite");
+  if (!D) {
+    setzeKopf("Keine Messdaten", "", false);
+    s.innerHTML = `<div class="leer"><div class="mini-orca">${orcaSvg()}</div>Die Datei <b>orca-daten.js</b> fehlt neben dieser Seite.<br>Erzeugen mit Werkzeuge\\Gui-Daten.ps1</div>`;
+    return;
+  }
+  document.getElementById("inhalt").onscroll = null;
+  if (istEinseiter()) return renderEinseiter();
+  const seiten = { kategorie: () => renderListe(ansicht.wert),
+    waechter: renderWaechter, apps: renderApps, kennung: renderKennung, schnapp: renderSchnapp, profile: renderProfile, verlauf: renderVerlauf, bekannt: renderBekannt, ueber: renderUeber };
+  (seiten[ansicht.art] || renderEinseiter)();
+}
+
+function stufenKnoepfe(st) {
+  return `<div class="stufen">${["gruen", "gelb", "rot", "individuell"].map(s => `<button data-s="${s}" class="${st === s ? "an" : ""}">${s === "individuell" ? "" : `<i style="background:var(--${s})"></i>`}${t(s)}</button>`).join("")}</div>`;
+}
+const STUFE_TIPP = {"gruen": "Basis: die wichtigsten Abschaltungen, ohne Nebenwirkungen.", "gelb": "Erweitert: alles, was ohne spürbare Nachteile geht – die Empfehlung.", "rot": "Maximal: zusätzlich Einstellungen mit spürbarer Folge, etwa ohne Liste zuletzt verwendeter Dateien oder ohne Ordnerzugriff für Apps. Sicherheitsrisiken sind nie enthalten."};
+
+const EINSEITER = ["dashboard", "uebersicht", "alle"];
+const istEinseiter = () => EINSEITER.includes(ansicht.art);
+const ABSCHNITT_KOPF = {
+  dashboard: () => [t("dashboard"), D.system || ""],
+  uebersicht: () => [t("uebersicht"), `Schutzstufen für ${KATS.filter(k => k.name !== "Experimentell").length} Bereiche`],
+  alle: () => ["Alle Einstellungen", `${PUNKTE.length} Einstellungen · ${PUNKTE.filter(p => bedienbar(p) && istAn(p)).length} von ${PUNKTE.filter(bedienbar).length} aktiv`],
+};
+
+function renderEinseiter() {
+  const seite = document.getElementById("seite");
+  seite.innerHTML = `<section id="abs-dashboard" data-abschnitt="dashboard">${dashboardHtml()}</section>
+    <hr class="trennlinie"><section id="abs-uebersicht" data-abschnitt="uebersicht">${kategorienHtml()}</section>
+    <hr class="trennlinie"><section id="abs-alle" data-abschnitt="alle">
+      <div class="abschnitt"><h2>Alle Einstellungen</h2><span class="leise">nach Bereich</span></div>
+      <div class="chips" id="filterInline" style="margin-bottom:18px"></div>
+      <div id="alleInhalt"></div></section>`;
+  verbindeDashboard();
+  document.querySelectorAll("#abs-uebersicht .kachel-k").forEach(k => {
+    verbindeStufen(k, k.dataset.kat, true);
+    // Klick auf die Kachel (nicht auf die Stufenknöpfe) öffnet die Seite des Bereichs mit Erklärung
+    k.addEventListener("click", e => { if (!e.target.closest(".stufen")) gehe("kategorie", k.dataset.kat); });
+  });
+  renderAlleInhalt();
+  const inhalt = document.getElementById("inhalt");
+  inhalt.onscroll = folgeScroll;
+  folgeScroll();
+}
+
+// Nur die Karten neu zeichnen (Filter, Suche) – der Rest der Seite bleibt stehen.
+function renderAlleInhalt() {
+  baueFilter(PUNKTE, "filterInline", () => { renderAlleInhalt(); });
+  document.getElementById("alleInhalt").innerHTML = `<div class="raster">${kartenHtml(PUNKTE.filter(passt), true)}</div>`;
+  verbindeKarten();
+}
+
+// Seitenleiste und Kopfzeile folgen dem Bildlauf.
+function folgeScroll() {
+  if (!istEinseiter()) return;
+  const inhalt = document.getElementById("inhalt");
+  const oben = inhalt.getBoundingClientRect().top + 90;
+  let abschnitt = "dashboard";
+  document.querySelectorAll("#seite [data-abschnitt]").forEach(s => { if (s.getBoundingClientRect().top <= oben) abschnitt = s.dataset.abschnitt; });
+  if (abschnitt !== folgeScroll.letzter) { protokoll("scroll", "Abschnitt " + abschnitt); folgeScroll.letzter = abschnitt; }
+  markiereNav(abschnitt, null);
+  const [titel, unter] = ABSCHNITT_KOPF[abschnitt]();
+  setzeKopf(titel, unter, false);
+}
+
+// Zu einem der drei Abschnitte springen (zeigt die Startseite, falls nötig).
+function springe(art) {
+  const war = istEinseiter();
+  ansicht = { art, wert: null };
+  if (!war) render();
+  const ziel = document.getElementById("abs-" + art), inhalt = document.getElementById("inhalt");
+  if (!ziel) return;
+  const y = ziel.getBoundingClientRect().top - inhalt.getBoundingClientRect().top + inhalt.scrollTop - (art === "dashboard" ? 28 : 18);
+  inhalt.scrollTo({ top: Math.max(0, y), behavior: war && opt.bewegung !== "aus" ? "smooth" : "auto" });
+  setTimeout(folgeScroll, war ? 450 : 0);
+}
+
+function kategorienHtml() {
+  const zurueck = letzteZurueckgestellt();
+  let html = "";
+  if (zurueck.length) {
+    html += `<div class="hinweis-band"><div><b>Letzte Prüfung:</b> ${zurueck.length} ${zurueck.length === 1 ? "Einstellung wurde" : "Einstellungen wurden"} wiederhergestellt (${esc(zurueck.join(", "))}). Windows oder ein Programm hatte sie geändert.</div></div>`;
+  }
+  html += `<div class="abschnitt"><h2>${t("uebersicht")}</h2><span class="leise">Schutzstufe je Bereich wählen – Klick auf eine Kachel zeigt ihre Einstellungen</span></div>
+    <div class="legende"><span data-tip="${STUFE_TIPP.gruen}"><i style="background:var(--gruen)"></i>Basis</span><span data-tip="${STUFE_TIPP.gelb}"><i style="background:var(--gelb)"></i>Erweitert</span><span data-tip="${STUFE_TIPP.rot}"><i style="background:var(--rot)"></i>Maximal</span><button class="sicherheit" data-sicherheit data-tip="Einstellungen, die den Schutz des Systems verringern. Nicht Teil der Schutzstufen, nur einzeln aktivierbar.">⚠ Sicherheitsrisiko</button></div>
+    <div class="dash">`;
+  for (const k of KATS) {
+    if (k.name === "Experimentell") continue;
+    const l = PUNKTE.filter(p => p.kategorie === k.name && bedienbar(p));
+    const an = l.filter(istAn).length;
+    const st = stufeDerKategorie(k.name);
+    html += `<div class="kachel-k" data-kat="${esc(k.name)}">
+      <div class="oben">${svg(k.name)}<b>${esc(k.anzeige)}</b><span class="zahl">${an}/${l.length}</span></div>
+      <p>${esc(k.erklaerung)}</p>
+      <div class="balken"><i style="width:${l.length ? Math.round(an / l.length * 100) : 0}%"></i></div>
+      ${stufenKnoepfe(st)}
+      <div class="stufe-text">${esc(stufenText(k.name, st))}</div>
+    </div>`;
+  }
+  return html + "</div>";
+}
+
+// --- Dashboard: das Wichtigste kompakt auf einen Blick -------------------
+function dashboardHtml() {
+  const empf = PUNKTE.filter(p => bedienbar(p) && empfohlen(p));
+  const an = empf.filter(istAn).length, pr = empf.length ? Math.round(an / empf.length * 100) : 0;
+  const offen = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size;
+  const nv = PUNKTE.filter(p => !bedienbar(p)).length;
+  const risiko = PUNKTE.filter(p => p.senktSchutz && bedienbar(p) && istAn(p)).length;
+  const zusatz = PUNKTE.filter(p => p.stufe === "Zusatz" && bedienbar(p) && istAn(p)).length;
+  const stFarbe = { gruen: "var(--gruen)", gelb: "var(--gelb)", rot: "var(--rot)", individuell: "var(--akzent)" };
+  const zeilen = KATS.filter(k => k.name !== "Experimentell").map(k => {
+    const l = PUNKTE.filter(p => p.kategorie === k.name && bedienbar(p)), a = l.filter(istAn).length, st = stufeDerKategorie(k.name);
+    return `<div class="db-zeile" data-kat="${esc(k.name)}" data-tip="${esc(t(st))}: ${esc(stufenText(k.name, st))}">${svg(k.name)}<span class="name">${esc(k.anzeige)}</span>
+      <div class="balken"><i style="width:${l.length ? Math.round(a / l.length * 100) : 0}%"></i></div><span class="zahl">${a}/${l.length}</span><i class="st" style="background:${stFarbe[st]}"></i></div>`;
+  }).join("");
+  // Ohne Zustandsdatei ist OrcaShield auf diesem Rechner noch nicht eingerichtet –
+  // dann laufen weder Wächter noch Bereinigung, und das steht auch so da.
+  const eingerichtet = !!D.installiert;
+  const wAn = eingerichtet && (assistentVorgemerkt.has("waechter") ? assistentVorgemerkt.get("waechter") : automatikIst("waechter"));
+  const bAn = eingerichtet && (assistentVorgemerkt.has("herunterfahren") ? assistentVorgemerkt.get("herunterfahren") : !!D.bereinigungAktiv);
+  const dienstText = (zuletzt, an) => zuletzt ? "zuletzt " + esc(zuletzt) : !eingerichtet ? "noch nicht eingerichtet" : an ? "eingeschaltet" : "ausgeschaltet";
+  const v = (D.verlauf || []).slice(-5).reverse();
+  return `<div class="db">
+    <div class="db-k db-gross"><div class="ring" style="--p:${pr}"><span>${pr}%</span><div class="spitze"></div></div>
+      <div class="zeilen"><b>${an} von ${empf.length}</b> empfohlenen Einstellungen aktiv<br>${zusatz ? `${zusatz} ${zusatz === 1 ? "Zusatzoption" : "Zusatzoptionen"} aktiv<br>` : ""}<span class="leise">${esc(PRODUKT)} · gemessen ${esc(D.gemessen)}</span></div></div>
+    <div class="db-zahlen"><div class="db-k db-zahl ${offen ? "offen klick" : ""}" id="dbOffen"><h3>Ausstehend</h3><b>${offen}</b><span>${offen ? "Änderungen prüfen &amp; anwenden" : "nichts vorgemerkt"}</span></div>
+    <div class="db-k db-zahl ${risiko ? "warn klick" : ""}" id="dbRisiko"><h3>Sicherheitsrisiken</h3><b>${risiko}</b><span>${risiko ? "aktiv – verringern den Schutz" : "keines aktiv"}</span></div>
+    <div class="db-k db-zahl klick" id="dbNv"><h3>Nicht verfügbar</h3><b>${nv}</b><span>auf diesem Gerät</span></div></div>
+    <div class="db-k db-bereiche"><h3>Bereiche</h3><div class="db-liste">${zeilen}</div></div>
+    <div class="db-k db-dienste"><h3>Überwachung &amp; Automatik</h3>
+      <div class="db-dienst"><i class="${wAn ? "" : "aus"}"></i><b>Wächter</b><span>${dienstText(D.waechter, wAn)}</span></div>
+      <div class="db-dienst"><i class="${bAn ? "" : "aus"}"></i><b>Bereinigung</b><span>${dienstText(D.shutdown, bAn)}</span></div>
+      <div class="db-dienst"><i class="${D.trim ? "" : "aus"}"></i><b>SSD-Pflege (TRIM)</b><span>${D.trim ? "zuletzt " + esc(D.trim) : "–"}</span></div>
+      <button class="knopf still" id="dbWaechter" style="align-self:flex-start;margin-top:4px">Einstellen</button></div>
+    ${dashboardWiederherstellung()}
+    <div class="db-k db-verlauf"><h3>Letzte Ereignisse</h3>${v.map(verlaufZeile).join("") || '<div class="v-zeile"><div></div><div class="t">Noch keine Einträge.</div></div>'}</div>
+  </div>`;
+}
+function dashboardWiederherstellung() {
+  const gesetzt = PUNKTE.filter(p => bedienbar(p) && p.aktiv).length;
+  const punkte = laden("orca-schnapp", []).slice(0, 3);
+  return `<div class="db-k db-wieder"><h3>Wiederherstellung</h3>
+    <p class="leise">${gesetzt ? `${gesetzt} Einstellungen hat OrcaShield gesetzt. Der Zustand davor ist gesichert.` : "OrcaShield hat hier noch nichts gesetzt."}</p>
+    <div class="db-wieder-knoepfe"><button class="knopf gefahr" id="dbAllesZurueck" ${gesetzt ? "" : "disabled"} data-tip="Merkt alle von OrcaShield gesetzten Einstellungen zum Zurücksetzen vor und zeigt die Vorschau. Geändert wird erst nach deiner Bestätigung.">Alles auf den Ausgangszustand</button>
+      <button class="knopf still" id="dbSnapNeu">Sicherungspunkt erstellen</button></div>
+    ${punkte.length ? `<div class="db-snaps">${punkte.map((s, i) => `<div class="db-snap"><span>${esc(s.name)}<small>${esc(s.zeit)}</small></span><button class="klein-knopf" data-db-snap="${i}">Wiederherstellen</button></div>`).join("")}</div>` : ""}
+    <button class="knopf still" id="dbZurSeite" style="align-self:flex-start">Alle Sicherungspunkte</button></div>`;
+}
+function verbindeDashboard() {
+  const offen = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size;
+  document.getElementById("dbAllesZurueck").addEventListener("click", allesZurueck);
+  document.getElementById("dbSnapNeu").addEventListener("click", () => { sicherungspunktErstellen(); aktualisiere(); });
+  document.getElementById("dbZurSeite").addEventListener("click", () => gehe("schnapp"));
+  document.querySelectorAll("[data-db-snap]").forEach(b => b.addEventListener("click", () => sicherungspunktWiederherstellen(+b.dataset.dbSnap)));
+  document.querySelectorAll(".db-zeile").forEach(z => z.addEventListener("click", () => gehe("kategorie", z.dataset.kat)));
+  document.getElementById("dbOffen").addEventListener("click", () => { if (offen) vorschau(); });
+  document.getElementById("dbRisiko").addEventListener("click", e => { if (e.currentTarget.classList.contains("klick")) { filter = "sicherheit"; renderAlleInhalt(); springe("alle"); } });
+  document.getElementById("dbNv").addEventListener("click", () => { filter = "nv"; renderAlleInhalt(); springe("alle"); });
+  document.getElementById("dbWaechter").addEventListener("click", () => gehe("waechter"));
+}
+function verbindeStufen(el, kat, vomDashboard) {
+  const txt = el.querySelector(".stufe-text");
+  el.querySelectorAll(".stufen button").forEach(b => {
+    b.addEventListener("mouseenter", () => { txt.textContent = stufenText(kat, b.dataset.s); });
+    b.addEventListener("mouseleave", () => { txt.textContent = stufenText(kat, stufeDerKategorie(kat)); });
+    b.addEventListener("click", () => {
+      if (b.dataset.s === "individuell") { if (vomDashboard) gehe("kategorie", kat); else toast("Einstellungen unten einzeln festlegen"); return; }
+      setzeStufe(kat, b.dataset.s); aktualisiere();
+      toast(`${katName(kat)}: Stufe ${t(b.dataset.s)} ausgewählt`);
+    });
+  });
+}
+
+// --- Liste aller oder einer Kategorie -----------------------------------
+function baueFilter(liste, zielId = "filterLeiste", neu = render) {
+  const z = {
+    alle: liste.length,
+    an: liste.filter(p => bedienbar(p) && istAn(p)).length,
+    aus: liste.filter(p => bedienbar(p) && !istAn(p)).length,
+    gruen: liste.filter(p => stufenFarbe(p) === "Keiner").length,
+    gelb: liste.filter(p => stufenFarbe(p) === "Leicht").length,
+    rot: liste.filter(p => stufenFarbe(p) === "Tief").length,
+    sicherheit: liste.filter(p => p.senktSchutz).length,
+    nv: liste.filter(p => !bedienbar(p)).length,
+  };
+  const chip = (f, txt, extra = "") => `<button class="chip ${filter === f ? "an" : ""}" data-filter="${f}">${extra}${txt}<span class="n">${z[f]}</span></button>`; // txt ist eigener, fester Text
+  document.getElementById(zielId).innerHTML =
+    chip("alle", "Alle") + chip("an", "Aktiv") + chip("aus", "Inaktiv") +
+    chip("gruen", "Basis", '<span class="punkt" style="background:var(--gruen)"></span>') +
+    chip("gelb", "Erweitert", '<span class="punkt" style="background:var(--gelb)"></span>') +
+    chip("rot", "Maximal", '<span class="punkt" style="background:var(--rot)"></span>') +
+    chip("sicherheit", '<span style="color:var(--rot)">⚠ Sicherheitsrisiko</span>') + chip("nv", "Nicht verfügbar");
+  document.querySelectorAll(`#${zielId} [data-filter]`).forEach(c => c.addEventListener("click", () => { filter = c.dataset.filter; neu(); }));
+}
+function passt(p) {
+  const f = {
+    an: bedienbar(p) && istAn(p), aus: bedienbar(p) && !istAn(p), gruen: stufenFarbe(p) === "Keiner", gelb: stufenFarbe(p) === "Leicht",
+    rot: stufenFarbe(p) === "Tief", sicherheit: p.senktSchutz, nv: !bedienbar(p),
+  };
+  if (filter !== "alle" && !f[filter]) return false;
+  if (suchtext) {
+    let h = p.id + " " + p.name + " " + p.erklaerung + " " + p.hinweis + " " + katName(p.kategorie);
+    // Auf Englisch auch in der englischen Fassung suchen
+    if (SP === "en") h += " " + [p.name, p.erklaerung, p.hinweis, katName(p.kategorie)].map(UEB.en).join(" ");
+    h = h.toLowerCase();
+    if (!suchtext.split(/\s+/).every(w => h.includes(w))) return false;
+  }
+  return true;
+}
+function renderListe(kat) {
+  const liste = kat ? PUNKTE.filter(p => p.kategorie === kat) : PUNKTE;
+  const an = liste.filter(p => bedienbar(p) && istAn(p)).length, b = liste.filter(bedienbar).length;
+  setzeKopf(kat ? katName(kat) : "Alle Einstellungen", `${liste.length} Einstellungen · ${an} von ${b} aktiv`, true);
+  baueFilter(liste);
+  let html = "";
+  if (kat && kat !== "Experimentell") {
+    const st = stufeDerKategorie(kat);
+    html += `<div class="kat-kopf" data-kat="${esc(kat)}"><p>${esc(KAT[kat]?.erklaerung || "")}</p>${stufenKnoepfe(st)}<div class="stufe-text">${esc(stufenText(kat, st))}</div></div>`;
+  }
+  if (kat === "Experimentell") {
+    html += `<div class="kat-kopf"><p>${esc(KAT.Experimentell?.erklaerung || "")}</p><p>Diese Einstellungen gehören zu keinem Profil und keiner Schutzstufe. Jede zeigt unter „Technische Angaben“ den gemessenen Wert (Ist) und den Sollwert – vorher und nach dem Anwenden. Ob der Rechner dadurch spürbar schneller wird, hängt vom Gerät ab.</p></div>`;
+  }
+  html += `<div class="raster">${kartenHtml(liste.filter(passt), !kat)}</div>`;
+  document.getElementById("seite").innerHTML = html;
+  const kk = document.querySelector(".kat-kopf[data-kat]");
+  if (kk) verbindeStufen(kk, kat, false);
+  verbindeKarten();
+}
+
+function kartenHtml(liste, gruppiert) {
+  if (!liste.length) return `<div class="leer"><div class="mini-orca">${orcaSvg()}</div>Hier schwimmt nichts.</div>`;
+  let html = "", letzte = null;
+  for (const p of liste) {
+    if (gruppiert && p.kategorie !== letzte) {
+      html += `<div class="gruppe-titel"><h2>${esc(katName(p.kategorie))}</h2><span>${liste.filter(x => x.kategorie === p.kategorie).length}</span></div>`;
+      letzte = p.kategorie;
+    }
+    html += karte(p);
+  }
+  return html;
+}
+function karte(p) {
+  const an = istAn(p), geaendert = vorgemerkt.has(p.id), ok = bedienbar(p);
+  const status = !ok ? `<span data-tip="${esc(nichtVerfuegbarGrund(p))}">Nicht verfügbar</span>` : an ? '<span class="status-an">Aktiv</span>' : '<span class="status-aus">Inaktiv</span>';
+  return `
+  <article class="karte ${geaendert ? "geaendert" : ""} ${ok ? "" : "nv"}" data-id="${esc(p.id)}" data-e="${esc(stufenFarbe(p))}">
+    <div class="karte-kopf">
+      <div class="karte-text">
+        <h3>${esc(p.name)}</h3>
+        <div class="meta"><span class="mono">${esc(p.id)}</span>${status}${p.senktSchutz ? '<button class="sicherheit" data-sicherheit>⚠ Sicherheitsrisiko</button>' : ""}${geaendert ? `<span class="vorgemerkt">${vorgemerkt.get(p.id) ? "Aktivierung ausstehend" : "Zurücksetzen ausstehend"}</span>` : ""}</div>
+      </div>
+      <label class="schalter"><input type="checkbox" ${an ? "checked" : ""} ${ok ? "" : "disabled"} aria-label="${esc(p.name)}"></label>
+    </div>
+    <p class="karte-erkl">${esc(p.erklaerung)}</p>
+    <div class="details"></div>
+  </article>`;
+}
+function detailsHtml(p) {
+  const e = { Keiner: "Keine spürbare Einschränkung.", Leicht: "Leichte Einschränkung.", Tief: "Spürbare Einschränkung." }[p.eingriff]
+    + ({ Light: " Gehört zur Stufe Basis.", Standard: " Gehört zur Stufe Erweitert.", Maximum: " Gehört zur Stufe Maximal." }[p.stufe] || "");
+  const bedienb = bedienbar(p);
+  return `
+    <div class="box"><b>Auswirkung:</b> ${esc(e)}${p.stufe === "Zusatz" ? " Zusatzoption – nur einzeln aktivierbar." : ""}${p.aktiv ? " Wird überwacht und bei Änderung wiederhergestellt." : ""}</div>
+    ${p.senktSchutz ? `<div class="box warnung"><b>Sicherheitsrisiko:</b> ${esc(p.hinweis || "Senkt den Schutz des Rechners.")}</div>` : ""}
+    ${sperreHtml(p, true)}
+    ${p.hinweis && !p.senktSchutz ? `<div class="box hinweis"><b>Hinweis:</b> ${esc(p.hinweis)}</div>` : ""}
+    ${p.benoetigtVon && p.benoetigtVon.length ? `<div class="box hinweis"><b>Abhängigkeit:</b> ${esc(p.benoetigtVon.join(", "))} benötigt diese Funktion. Die Einstellung wird deshalb nicht erzwungen; das wird bei jeder Prüfung neu bewertet.</div>` : ""}
+    ${!bedienb ? `<div class="box"><b>Nicht verfügbar:</b> ${esc(nichtVerfuegbarGrund(p))}</div>` : ""}
+    <div class="code-box">
+      <div class="reiter"><button class="an" data-r="an">Aktivieren</button><button data-r="zurueck">Zurücksetzen</button><button class="kopieren">Kopieren</button></div>
+      <pre>${esc(befehle(p).an)}</pre>
+    </div>
+    <div class="box technik-box"><div class="technik">Typ <span>${esc(p.typ)}</span> · Stufe <span>${esc(p.stufe)}</span> · ${p.bereich === "Benutzer" ? "dein Konto" : "ganzer Rechner"}<br>
+      ${p.pfad ? `Pfad <span>${esc(p.pfad)}</span><br>` : ""}${p.wert ? `Wert <span>${esc(p.wert)}</span> · ` : ""}Soll <span>${esc(p.soll)}</span> · Ist <span>${esc(p.ist || "–")}</span>${p.basis ? ` · Ausgangszustand <span>${esc(p.basis.text || "–")}</span>` : ""}</div></div>
+    ${bedienb && istAn(p) ? `<div class="karte-aktionen"><button class="knopf still" data-rollback="${esc(p.id)}" data-tip="Stellt den Wert wieder her, der vor der ersten Änderung durch OrcaShield gemessen wurde.">Zurücksetzen</button></div>` : ""}`;
+}
+// Eine Karte auf- oder zuklappen. Im Kachelraster wächst ohnehin die
+// ganze Reihe mit - deshalb klappen alle Karten derselben Reihe gemeinsam.
+function setzeOffen(k, offen) {
+  const p = PUNKTE.find(x => x.id === k.dataset.id);
+  if (!p) return;
+  k.classList.toggle("offen-auf", offen);
+  const d = k.querySelector(".details");
+  if (offen && !d.dataset.fertig) { d.innerHTML = detailsHtml(p); d.dataset.fertig = "1"; verbindeDetails(k, p); }
+}
+function klappeReihe(k) {
+  const offen = !k.classList.contains("offen-auf");
+  const oben = k.offsetTop;
+  const reihe = [...k.parentElement.querySelectorAll(":scope > .karte[data-id]")].filter(x => Math.abs(x.offsetTop - oben) < 4);
+  for (const x of reihe) setzeOffen(x, offen);
+}
+function verbindeKarten() {
+  document.querySelectorAll(".karte[data-id]").forEach(k => {
+    const p = PUNKTE.find(x => x.id === k.dataset.id);
+    if (!p) return;
+    k.querySelector(".karte-text").addEventListener("click", () => klappeReihe(k));
+    k.querySelector(".karte-erkl").addEventListener("click", () => klappeReihe(k));
+    const cb = k.querySelector("input");
+    cb.addEventListener("change", () => {
+      const ziel = cb.checked;
+      if (ziel && nurEinzeln(p)) { cb.checked = !ziel; return frage(p, () => { merke(p, true); aktualisiere(); }); }
+      merke(p, ziel); aktualisiere();
+    });
+  });
+}
+function verbindeDetails(k, p) {
+  const box = k.querySelector(".code-box"), pre = box.querySelector("pre"), b = befehle(p);
+  box.querySelectorAll("[data-r]").forEach(r => r.addEventListener("click", () => {
+    box.querySelectorAll("[data-r]").forEach(x => x.classList.toggle("an", x === r));
+    pre.textContent = b[r.dataset.r];
+  }));
+  box.querySelector(".kopieren").addEventListener("click", () => kopiere(pre.textContent));
+  const rb = k.querySelector("[data-rollback]");
+  if (rb) rb.addEventListener("click", () => { merke(p, false); aktualisiere(); toast(`${p.id}: Zurücksetzen ausstehend`); });
+  const os = k.querySelector("[data-ohne-sperre]");
+  if (os) os.addEventListener("click", () => ohneSperre(p));
+}
+const ersatzOhneSperre = p => p.ohneSperre ? PUNKTE.find(x => x.id === p.ohneSperre && bedienbar(x)) : null;
+function sperreHtml(p, mitKnopf) {
+  if (!p.warnung) return "";
+  const alt = ersatzOhneSperre(p);
+  return `<div class="box warnung"><b>Per Richtlinie gesperrt:</b> ${esc(p.warnung)}
+    <p class="leise" style="margin:6px 0 0">Warum grau: Eine Richtlinie hat in Windows Vorrang vor dem Schalter in den Einstellungen. Windows zeigt den Schalter dann gesperrt mit dem Hinweis „Einige Einstellungen werden von Ihrer Organisation verwaltet“. Die Sperre verschwindet, sobald dieser Punkt zurückgesetzt ist.</p>
+    ${alt ? `<p style="margin:6px 0 0">Ohne Sperre geht es mit <b>${esc(alt.id)}</b> – ${esc(alt.name)}${alt.bereich === "Benutzer" ? " (für dein Konto)" : ""}.</p>
+      ${mitKnopf ? `<button class="klein-knopf" data-ohne-sperre="${esc(alt.id)}" style="margin-top:8px">Stattdessen ohne Sperre</button>` : ""}` : ""}</div>`;
+}
+function ohneSperre(p) {
+  const alt = ersatzOhneSperre(p); if (!alt) return;
+  if (istAn(p)) merke(p, false);
+  if (!istAn(alt)) merke(alt, true);
+  protokoll("sperre", `${p.id} → ohne Sperre über ${alt.id}`);
+  aktualisiere(); toast(`${alt.id} statt ${p.id} vorgemerkt`);
+}
+function frage(p, ok) {
+  const alt = ersatzOhneSperre(p);
+  zeigeDialog(`<h2 ${p.senktSchutz ? 'style="color:var(--rot)"' : ""}>${p.senktSchutz ? "⚠ " : ""}${esc(p.name)}</h2>
+    ${p.senktSchutz ? `<div class="box warnung"><b>Sicherheitsrisiko:</b> ${esc(p.hinweis || "")}</div>` : ""}
+    ${sperreHtml(p, false)}
+    ${!p.senktSchutz && p.hinweis ? `<div class="box hinweis"><b>Hinweis:</b> ${esc(p.hinweis)}</div>` : ""}
+    <p>${esc(p.erklaerung)}</p>
+    <div class="knoepfe"><button class="knopf voll" data-a="nein">Abbrechen</button>${alt && !istAn(alt) ? `<button class="knopf still" data-a="alt">Stattdessen ${esc(alt.id)} ohne Sperre</button>` : ""}<button class="knopf ${p.senktSchutz ? "gefahr" : ""}" data-a="ja">${p.senktSchutz ? "Risiko akzeptieren und aktivieren" : "Aktivieren"}</button></div>`,
+    a => { if (a === "ja") ok(); if (a === "alt") { merke(alt, true); aktualisiere(); toast(`${alt.id} vorgemerkt`); } }, !!p.senktSchutz);
+}
+
+function sicherheitsWarnung() {
+  zeigeDialog(`<h2 style="color:var(--rot)">⚠ Sicherheitsrisiko</h2>
+    <div class="box warnung"><b>Bedeutung:</b> Diese Einstellungen erhöhen den Datenschutz, verringern aber den Schutz des Systems – etwa weil Sicherheitsupdates ausbleiben, Warnungen vor Betrugsseiten entfallen oder der Virenschutz weniger erkennt.</div>
+    <p>Sie sind deshalb nicht Teil der Schutzstufen und Profile und lassen sich nur einzeln aktivieren. Zurücksetzen ist jederzeit möglich.</p>
+    <div class="knoepfe"><button class="knopf gefahr" data-a="ok">Verstanden</button></div>`, null, true);
+}
+document.addEventListener("click", e => { if (e.target.closest("[data-sicherheit]")) { e.stopPropagation(); sicherheitsWarnung(); } }, true);
+
+// --- Wächter & Assistenten ----------------------------------------------
+// Erklärungen der Funktionen – wörtlich aus Readme.txt (erzeugt, nicht von Hand geschrieben)
+const ERKLAERUNG = {
+ "waechter": {
+  "titel": "Wächter",
+  "absaetze": [
+   "Ein Wächter nach jeder Anmeldung: sichtbar, mit Administratorrechten (die geplante Aufgabe erhöht ohne Rückfrage), in deinem Konto. Er prüft und zeigt:",
+   "- Windows-Version - nach einem Funktionsupdate stellt Windows erfahrungsgemäß am meisten zurück",
+   "- alle aktiven Einstellungen, Abweichungen werden zurückgestellt. Ausnahme: Ein installiertes Programm braucht den alten Zustand nachweislich und stellt ihn selbst wieder um (Meta Horizon schaltet LLMNR ein, Docker Desktop den Hypervisor). Dann lässt der Wächter den Punkt in Ruhe, solange das Programm installiert ist, und sagt das einmal. Muss ein Punkt bei drei Anmeldungen in Folge zurückgestellt werden, meldet er auch das einmal.",
+   "- entfernte Apps",
+   "- Defender und Firewall (siehe Readme, Abschnitt 4)",
+   "- ob der Herunterfahren-Wächter beim letzten Herunterfahren gelaufen ist - gegen das Systemprotokoll geprüft",
+   "- die eigene Aufgabe und die Schreibrechte am Programmordner",
+   "- Hypervisor und Suchindex",
+   "- was seit dem letzten Lauf neu ist: Autostart-Einträge, Richtlinien, die nicht von OrcaShield stammen, Stammzertifikate, Proxy, Firewallregeln für eingehende Verbindungen und Aufgaben oder Dienste mit den Namen bekannter Sammler. Beim ersten Lauf gilt alles Vorhandene als bekannt. Neues wird gemeldet, bis du es in OrcaShield aufnimmst - geändert wird dabei nichts.",
+   "- nach einem Funktionsupdate: was das Update verstellt hat, im Verlauf nachlesbar",
+   "Das Fenster ist grün und schließt nach 5 Sekunden, wenn alles sauber ist. Gelb bei Hinweisen, 10 Sekunden. Rot bei Alarm - dann bleibt es offen, bis du eine Taste drückst.",
+   "Der zweite Wächter läuft beim Herunterfahren, über die lokale Gruppenrichtlinie - genauso eingetragen, wie es gpedit.msc tut."
+  ]
+ },
+ "herunterfahren": {
+  "titel": "Bereinigung beim Herunterfahren",
+  "absaetze": [
+   "Bei jedem Herunterfahren und Neustart beseitigt es Datenspuren: Papierkorb, Schattenkopien, Miniaturansichten, Diagnoseprotokolle, temporäre Dateien, Absturzabbilder, Prefetch, zuletzt verwendete Dateien, Explorer-Verläufe und die Ordneransichten des Explorers (ShellBags). Die Auslagerungsdatei wird beim Herunterfahren geleert. Nach der nächsten Anmeldung folgt ein TRIM-Durchlauf, damit die SSD die gelöschten Daten wirklich verwirft.",
+   "Schattenkopien entstehen vor allem durch den Computerschutz von Windows: eine pro Tag, mit älteren Fassungen auch gelöschter Dateien. SYS001 schaltet ihn für C: ab, dann entstehen sie gar nicht erst. Gelöscht wird über die Windows-Schnittstelle (Win32_ShadowCopy), nicht über vssadmin - den Befehl \"vssadmin delete shadows /all /quiet\" benutzt Erpressersoftware, und Defender beendet ihn zu Recht.",
+   "Gedacht ist das für ein unverschlüsseltes Systemlaufwerk: Es beseitigt Spuren, auch solche, die von verschlüsselten Laufwerken stammen. Deine normalen Dateien unter C:\\Users bleiben natürlich lesbar - gegen den Ausbau der SSD hilft nur eine Verschlüsselung von C:."
+  ]
+ },
+ "einstellungen": {
+  "titel": "Einstellungen prüfen",
+  "absaetze": [
+   "Ein Wächter nach jeder Anmeldung: sichtbar, mit Administratorrechten (die geplante Aufgabe erhöht ohne Rückfrage), in deinem Konto. Er prüft und zeigt:",
+   "- Windows-Version - nach einem Funktionsupdate stellt Windows erfahrungsgemäß am meisten zurück",
+   "- alle aktiven Einstellungen, Abweichungen werden zurückgestellt. Ausnahme: Ein installiertes Programm braucht den alten Zustand nachweislich und stellt ihn selbst wieder um (Meta Horizon schaltet LLMNR ein, Docker Desktop den Hypervisor). Dann lässt der Wächter den Punkt in Ruhe, solange das Programm installiert ist, und sagt das einmal. Muss ein Punkt bei drei Anmeldungen in Folge zurückgestellt werden, meldet er auch das einmal."
+  ]
+ },
+ "apps": {
+  "titel": "Entfernte Apps",
+  "absaetze": [
+   "Es entfernt vorinstallierte Apps, die du nicht brauchst, und räumt anschließend deren Rückstände weg. 37 Apps im Katalog. Kommt eine entfernte App mit einem Update zurück, entfernt der Wächter sie erneut - Edge eingeschlossen."
+  ]
+ },
+ "defender": {
+  "titel": "Defender-Wache",
+  "absaetze": [
+   "Ein Alarmsystem, kein Schloss. Das Schloss ist der Manipulationsschutz von Windows-Sicherheit. OrcaShield passt auf, dass er an bleibt, und schlägt Alarm, wenn sich jemand am Schutz zu schaffen macht:",
+   "- Echtzeitschutz, Verhaltensüberwachung, Prüfung beim Zugriff und bei Downloads aus",
+   "- Manipulationsschutz aus",
+   "- eine NEUE Ausnahme (Ordner, Programm, Dateiendung). Das ist der häufigste Trick: Schadsoftware schaltet Defender nicht ab, sondern nimmt sich selbst aus der Prüfung.",
+   "- ein weiteres Virenschutzprogramm meldet sich an - darauf nimmt sich Defender von selbst zurück",
+   "- eine Richtlinie schaltet Teile von Defender ab",
+   "- die Firewall ist in einem Profil aus",
+   "- Virensignaturen älter als drei Tage (Hinweis, kein Alarm)",
+   "- jeder NEUE Fund seit dem letzten Lauf, mit Name, Ort und ob Defender ihn unschädlich gemacht hat. Beim ersten Lauf werden ältere Funde nur gezählt.",
+   "OrcaShield repariert hier nichts. Der Manipulationsschutz verhindert Änderungen an Defender, auch durch OrcaShield, und das ist richtig so.",
+   "Grenze, ehrlich: Schadsoftware mit Administratorrechten kann auch OrcaShield abschalten. Die Wache meldet, sie verhindert nicht."
+  ]
+ },
+ "rechte": {
+  "titel": "Schreibrechte",
+  "absaetze": [
+   "Ordner unter C:\\ProgramData erben von Windows Schreibrechte für alle Benutzer. Jedes Programm unter deinem Konto könnte dort die Wächter-Skripte ohne Rückfrage umschreiben - und der Wächter führte den neuen Inhalt mit Administratorrechten aus. OrcaShield beschränkt das Schreiben in seinen Ordnern deshalb auf Administratoren und SYSTEM. Der Wächter prüft das bei jedem Lauf und repariert es."
+  ]
+ },
+ "kennung": {
+  "titel": "Hosts-Datei und Gerätekennung",
+  "absaetze": [
+   "OrcaShield verwaltet genau einen markierten Block am Ende der Hosts-Datei (# BEGIN OrcaShield ... # END OrcaShield). Alles außerhalb gehört dir. Einträge, die OrcaShield in seinen Block übernimmt, nimmt es aus deinem Teil heraus, damit nichts doppelt steht - sie liegen in Backup\\Hosts-uebernommen.txt, der Rückbau gibt sie zurück. Vor jedem Schreiben wird die ganze Datei gesichert; fehlt danach auch nur eine deiner Zeilen, wird die Sicherung zurückgelegt.",
+   "Drei Abschnitte, jeder ein eigener Punkt mit Einzelabfrage:",
+   "NET005  Gerätekennung - neun Microsoft-Adressen, über die Windows eine Gerätekennung (GDID) bekommt und abgleicht NET009  Microsoft-Konto-Anmeldung - login.live.com, account.live.com. Erst damit kommt sicher keine neue Kennung; dafür geht die Anmeldung mit dem Microsoft-Konto nicht mehr. Vorgabe Nein. NET007  Werbung und Telemetrie von Microsoft, rund 100 Adressen",
+   "Dazu NET006: eine Firewallregel, die dem Konto-Dienst wlidsvc den Netzzugang sperrt.",
+   "Die Sperren verhindern NEUE Gerätekennungen. Eine schon gespeicherte bleibt liegen, bis du sie auf der Seite „Gerätekennung“ entfernst. Das läuft nur auf Knopfdruck, weil dabei gespeicherte Microsoft-Zugangsdaten gelöscht werden."
+  ]
+ },
+ "trim": {
+  "titel": "SSD-Pflege (TRIM)",
+  "absaetze": [
+   "Nach der nächsten Anmeldung folgt ein TRIM-Durchlauf, damit die SSD die gelöschten Daten wirklich verwirft."
+  ]
+ },
+ "rueckbau": {
+  "titel": "Rückbau",
+  "absaetze": [
+   "Grundlage ist immer orca-baseline.json. Gibt es die nicht, setzt der Rückbau NICHTS zurück und verweist auf die Registry-Sicherung. Raten wäre an dieser Stelle schlimmer als nichts tun.",
+   "Entfernte Apps kommen durch den Rückbau nicht zurück."
+  ]
+ }
+};
+for (const k of ["autostart", "richtlinien", "zertifikate", "proxy", "firewall", "telemetrie", "update"]) ERKLAERUNG[k] = ERKLAERUNG.waechter;
+function erklaerHtml(key) {
+  const e = ERKLAERUNG[key]; if (!e) return "";
+  let html = "", liste = [];
+  const leeren = () => { if (liste.length) { html += `<ul>${liste.map(l => `<li>${esc(l)}</li>`).join("")}</ul>`; liste = []; } };
+  for (const a of e.absaetze) { if (a.startsWith("- ")) liste.push(a.slice(2)); else { leeren(); html += `<p>${esc(a)}</p>`; } }
+  leeren();
+  return `<h2>${esc(e.titel)}</h2><div class="erkl-text">${html}</div>`;
+}
+function erklaere(key, frage) {
+  if (!ERKLAERUNG[key]) { if (frage) frage.weiter(); return; }
+  protokoll("erklaerung", key + (frage ? " (vor dem Umschalten)" : ""));
+  const knoepfe = frage
+    ? `<button class="knopf still" data-a="nein">Abbrechen</button><button class="knopf voll" data-a="ja">${esc(frage.text)}</button>`
+    : `<button class="knopf voll" data-a="ok">Verstanden</button>`;
+  zeigeDialog(erklaerHtml(key) + `<div class="knoepfe">${knoepfe}</div>`, a => {
+    if (!frage) return;
+    const gesehen = laden("orca-erklaert", {}); gesehen[key] = true; speichern("orca-erklaert", gesehen);
+    if (a === "ja") frage.weiter(); else frage.abbrechen();
+  });
+}
+function neuGefundenHtml() {
+  const arten = D.neues || [];
+  if (!arten.length) return "";
+  const summe = arten.reduce((n, a) => n + (a.anzahl || 0), 0), offen = arten.some(a => a.erstlauf);
+  const zeileArt = a => {
+    const stand = a.fehler ? `Prüfung nicht möglich: ${esc(a.fehler)}` : a.erstlauf ? `${a.bestand} vorhanden – noch keine Ausgangsliste` : a.anzahl ? `<b style="color:var(--gelb)">${a.anzahl} neu</b> · ${a.bestand} insgesamt` : `nichts Neues · ${a.bestand} bekannt`;
+    const knopf = a.erstlauf || a.anzahl ? `<button class="klein-knopf" data-neu-art="${esc(a.art)}">${a.erstlauf ? "Als Ausgangsliste übernehmen" : "Alle aufnehmen"}</button>` : "";
+    const liste = (a.neu || []).map((e, i) => `<li><span>${esc(e.anzeige)}</span>${a.art === "telemetrie" ? `<button class="klein-knopf" data-sammler-aus="${i}">Abschalten</button>` : ""}<button class="klein-knopf" data-neu-art="${esc(a.art)}" data-neu-nr="${i}">Aufnehmen</button></li>`).join("");
+    return `<div class="zeile-k neu-art"><div class="mitte"><b>${esc(a.anzeige)}</b><div>${stand}</div>${liste ? `<ul class="neu-liste">${liste}</ul>` : ""}</div>${knopf}</div>`;
+  };
+  return `<div class="abschnitt" style="margin-top:14px"><h2>Neu gefunden</h2>
+      ${summe || offen ? `<button class="knopf still" id="btnNeuesAlle">Alles Neue aufnehmen</button>` : ""}</div>
+    <div class="liste-k">${arten.map(zeileArt).join("")}</div>
+    ${(D.eigeneSperren || []).length ? `<div class="abschnitt" style="margin-top:14px"><h2>Von OrcaShield abgeschaltet</h2></div>
+    <div class="liste-k"><div class="zeile-k"><div class="mitte"><ul class="neu-liste">${D.eigeneSperren.map((e, i) =>
+      `<li><span>${e.art === "dienst" ? "Dienst" : "Aufgabe"} ${esc(e.ziel)} · vorher ${esc(e.vorher)} · jetzt ${esc(e.da ? e.stand : "nicht mehr vorhanden")}${e.seit ? " · seit " + esc(e.seit) : ""}</span><button class="klein-knopf" data-sammler-zurueck="${i}">Zurücknehmen</button></li>`).join("")}</ul></div></div></div>` : ""}`;
+}
+function fremdeRichtlinienHtml() {
+  const liste = D.fremdeRichtlinien || [], weg = D.aufgehobeneRichtlinien || [];
+  if (!liste.length && !weg.length) return "";
+  const zeile = (e, i) => `<li><span>${e.titel ? `<b>${esc(e.titel)}</b><br>` : ""}<span class="mono" style="font-size:12px">${esc(e.anzeige)}</span>${e.bereich === "Benutzer" ? " · dein Konto" : " · ganzer Rechner"}</span><button class="klein-knopf" data-richtlinie-aus="${i}">Aufheben</button></li>`;
+  return `<div class="abschnitt" style="margin-top:14px"><h2>Fremde Richtlinien</h2><span class="leise">${liste.length} nicht von OrcaShield</span></div>
+    <div class="box"><p>Richtlinien haben in Windows Vorrang vor den Schaltern in den Einstellungen und sperren sie. Diese hier stammen nicht von OrcaShield – etwa von einer Firmenverwaltung, einem anderen Werkzeug oder einem Update. Aufheben sichert den Wert vorher; du kannst ihn jederzeit zurückschreiben.</p></div>
+    ${liste.length ? `<div class="liste-k"><div class="zeile-k"><div class="mitte"><ul class="neu-liste">${liste.map(zeile).join("")}</ul></div></div></div>` : ""}
+    ${weg.length ? `<div class="abschnitt" style="margin-top:14px"><h2>Von OrcaShield aufgehoben</h2></div>
+    <div class="liste-k"><div class="zeile-k"><div class="mitte"><ul class="neu-liste">${weg.map((e, i) => `<li><span class="mono" style="font-size:12px">${esc(e.anzeige)}${e.seit ? " · seit " + esc(e.seit) : ""}</span><button class="klein-knopf" data-richtlinie-zurueck="${i}">Zurücknehmen</button></li>`).join("")}</ul></div></div></div>` : ""}`;
+}
+function richtlinie(schluessel, richtung, name) {
+  if (!APP) { toast("Nur im Programm verfügbar"); return; }
+  const los = () => {
+    protokoll("richtlinie", `${richtung}: ${schluessel}`);
+    bruecke("richtlinie", { schluessel: [schluessel], richtung }).then(e => {
+      if (e.abgebrochen) { toast(e.abgebrochen); return; }
+      const p = (e.punkte || [])[0] || {};
+      toast((p.ok ? (richtung === "aus" ? "Aufgehoben" : "Zurückgeschrieben") : "Nicht gelungen: " + (p.grund || p.status)) + (e.simulation ? " (Simulation)" : ""));
+      neuMessen();
+    }).catch(err => { protokoll("fehler", "richtlinie: " + err.message); toast("Nicht gelungen: " + err.message); });
+  };
+  if (richtung === "zurueck") { los(); return; }
+  zeigeDialog(`<h2>Richtlinie aufheben?</h2><p class="mono" style="font-size:12.5px">${esc(name)}</p><p class="leise">Der Wert wird vorher gesichert; „Zurücknehmen“ schreibt ihn unverändert zurück. Wird der Rechner von einer Firma verwaltet, kann sie die Richtlinie wieder setzen.</p>
+    <div class="knoepfe"><button class="knopf still" data-a="nein">Abbrechen</button><button class="knopf voll" data-a="ja">Aufheben</button></div>`, a => { if (a === "ja") los(); });
+}
+function verdrahteRichtlinien() {
+  document.querySelectorAll("[data-richtlinie-aus]").forEach(b => b.addEventListener("click", () => {
+    const e = (D.fremdeRichtlinien || [])[+b.dataset.richtlinieAus]; if (e) richtlinie(e.schluessel, "aus", e.anzeige);
+  }));
+  document.querySelectorAll("[data-richtlinie-zurueck]").forEach(b => b.addEventListener("click", () => {
+    const e = (D.aufgehobeneRichtlinien || [])[+b.dataset.richtlinieZurueck]; if (e) richtlinie(e.schluessel, "zurueck", e.anzeige);
+  }));
+}
+function sammler(schluessel, richtung, name) {
+  if (!APP) { toast("Nur im Programm verfügbar"); return; }
+  const los = () => {
+    protokoll("neues", `sammler ${richtung}: ${schluessel}`);
+    bruecke("sammler", { schluessel: [schluessel], richtung }).then(e => {
+      if (e.abgebrochen) { toast(e.abgebrochen); return; }
+      const p = (e.punkte || [])[0] || {};
+      toast((p.ok ? (richtung === "aus" ? "Abgeschaltet" : "Zurückgenommen") : "Nicht gelungen: " + (p.grund || p.status)) + (e.simulation ? " (Simulation)" : ""));
+      neuMessen();
+    }).catch(err => { protokoll("fehler", "sammler: " + err.message); toast("Nicht gelungen: " + err.message); });
+  };
+  if (richtung === "zurueck") { los(); return; }
+  zeigeDialog(`<h2>Abschalten?</h2><p>${esc(name)}</p><p class="leise">Der Zustand vorher wird gesichert; „Zurücknehmen“ stellt ihn jederzeit wieder her. Der Wächter hält die Abschaltung.</p>
+    <div class="knoepfe"><button class="knopf still" data-a="nein">Abbrechen</button><button class="knopf voll" data-a="ja">Abschalten</button></div>`, a => { if (a === "ja") los(); });
+}
+function verdrahteNeues() {
+  const los = (daten, was) => {
+    if (!APP) { toast("Nur im Programm verfügbar"); return; }
+    protokoll("neues", "aufnehmen: " + was);
+    bruecke("aufnehmen", daten).then(e => {
+      if (e.abgebrochen) { toast(e.abgebrochen); return; }
+      const n = (e.punkte || []).reduce((s, p) => s + (p.aufgenommen || 0), 0), schlecht = (e.punkte || []).filter(p => !p.ok);
+      toast(schlecht.length ? "Nicht aufgenommen: " + schlecht.map(p => p.grund).join(", ") : `${n} ${n === 1 ? "Eintrag" : "Einträge"} aufgenommen`);
+      // Sofort anzeigen, was aufgenommen ist; die Neumessung im Hintergrund bestätigt es
+      for (const a of D.neues || []) {
+        if (daten.art && a.art !== daten.art) continue;
+        if (!(e.punkte || []).some(p => p.ok && p.id === "neues:" + a.art)) continue;
+        if (daten.alle) { a.erstlauf = false; a.neu = []; a.anzahl = 0; }
+        else { a.neu = (a.neu || []).filter(x => !daten.schluessel.includes(x.schluessel)); a.anzahl = a.neu.length; }
+      }
+      if (ansicht.art === "waechter") renderWaechter();
+      neuMessen();
+    }).catch(err => { protokoll("fehler", "aufnehmen: " + err.message); toast("Nicht aufgenommen: " + err.message); });
+  };
+  document.querySelectorAll("[data-sammler-aus]").forEach(b => b.addEventListener("click", () => {
+    const e = (((D.neues || []).find(x => x.art === "telemetrie") || {}).neu || [])[+b.dataset.sammlerAus]; if (e) sammler(e.schluessel, "aus", e.anzeige);
+  }));
+  document.querySelectorAll("[data-sammler-zurueck]").forEach(b => b.addEventListener("click", () => {
+    const e = (D.eigeneSperren || [])[+b.dataset.sammlerZurueck]; if (e) sammler(e.schluessel, "zurueck", e.ziel);
+  }));
+  const alle = document.getElementById("btnNeuesAlle");
+  if (alle) alle.addEventListener("click", () => los({ alle: true }, "alles"));
+  document.querySelectorAll("[data-neu-art]").forEach(b => b.addEventListener("click", () => {
+    const a = (D.neues || []).find(x => x.art === b.dataset.neuArt); if (!a) return;
+    if (b.dataset.neuNr === undefined) { los({ art: a.art, alle: true }, a.art + " (alle)"); return; }
+    const e = (a.neu || [])[+b.dataset.neuNr]; if (!e) return;
+    los({ art: a.art, schluessel: [e.schluessel] }, `${a.art}: ${e.anzeige}`);
+  }));
+}
+function renderWaechter() {
+  setzeKopf("Überwachung & Automatik", "Hintergrundaufgaben von OrcaShield – einzeln abschaltbar", false);
+  const aWert = n => assistentVorgemerkt.has(n) ? assistentVorgemerkt.get(n) : automatikIst(n);
+  const zeile = (key, titel, text, an, typ) => `<div class="zeile-k"><div class="mitte${ERKLAERUNG[key] ? " erklaerbar" : ""}" data-erkl="${esc(key)}"><b>${titel}</b><div>${text}</div></div>
+      <label class="schalter"><input type="checkbox" data-${typ}="${key}" ${an ? "checked" : ""}></label></div>`;
+  const bAn = n => waechterVorgemerkt.has(n) ? waechterVorgemerkt.get(n) : !(D.waechterAus || []).includes(n);
+  document.getElementById("seite").innerHTML = `<div class="seite">
+    <div class="abschnitt"><h2>Automatik</h2></div>
+    <div class="liste-k">
+      ${zeile("waechter", "Wächter", `Prüft nach jeder Anmeldung alle Einstellungen und stellt Änderungen wieder her.${D.waechter ? " Zuletzt: " + esc(D.waechter) : ""}`, aWert("waechter"), "assistent")}
+      ${zeile("herunterfahren", "Bereinigung beim Herunterfahren", `Entfernt Verläufe, Zwischenspeicher und temporäre Dateien.${D.shutdown ? " Zuletzt: " + esc(D.shutdown) : ""}`, aWert("herunterfahren"), "assistent")}
+    </div>
+    <div class="abschnitt" style="margin-top:14px"><h2>Prüfbereiche des Wächters</h2></div>
+    <div class="liste-k">${(D.bereiche || []).map(b => zeile(b.name, esc(b.anzeige), esc(b.text), bAn(b.name), "bereich")).join("")}</div>
+    ${neuGefundenHtml()}
+    ${fremdeRichtlinienHtml()}
+  </div>`;
+  verdrahteNeues();
+  verdrahteRichtlinien();
+  // Erst erklären, dann umschalten (nur beim ersten Mal je Funktion)
+  const mitErklaerung = (cb, key, uebernehmen) => {
+    if (!ERKLAERUNG[key] || laden("orca-erklaert", {})[key]) { uebernehmen(); return; }
+    const ziel = cb.checked; cb.checked = !ziel;
+    erklaere(key, { text: ziel ? "Einschalten" : "Ausschalten",
+      weiter: () => { cb.checked = ziel; uebernehmen(); }, abbrechen: () => {} });
+  };
+  document.querySelectorAll("[data-bereich]").forEach(cb => cb.addEventListener("change", () => mitErklaerung(cb, cb.dataset.bereich, () => {
+    const n = cb.dataset.bereich, ursprung = !(D.waechterAus || []).includes(n);
+    if (cb.checked === ursprung) waechterVorgemerkt.delete(n); else waechterVorgemerkt.set(n, cb.checked);
+    protokoll("waechter", `Prüfbereich ${n} → ${cb.checked ? "an" : "aus"}`);
+    aktualisiereLeiste();
+  })));
+  document.querySelectorAll("[data-assistent]").forEach(cb => cb.addEventListener("change", () => mitErklaerung(cb, cb.dataset.assistent, () => {
+    const n = cb.dataset.assistent, ursprung = automatikIst(n);
+    if (cb.checked === ursprung) assistentVorgemerkt.delete(n); else assistentVorgemerkt.set(n, cb.checked);
+    protokoll("waechter", `${n} → ${cb.checked ? "an" : "aus"}`);
+    aktualisiereLeiste();
+  })));
+  document.querySelectorAll(".erklaerbar[data-erkl]").forEach(m => m.addEventListener("click", () => erklaere(m.dataset.erkl)));
+}
+
+const appsGewaehlt = new Set();
+const APP_STUFE = { Light: ["gruen", "Basis"], Standard: ["gelb", "Erweitert"], Maximum: ["rot", "Maximal"] };
+const APP_STATUS = { Entfernt: "entfernt und nachgeprüft", NichtVorhanden: "war nicht installiert", Fehler: "fehlgeschlagen", Unbekannt: "unbekannte Kennung" };
+// Fortschritt und Abschluss für Apps und Gerätekennung
+function laufDialog(titel) {
+  zeigeDialog(`<h2>${esc(titel)}</h2><div class="mess-fortschritt"><div class="balken"><i id="laufBalken" style="width:2%"></i></div><span id="laufText">Vorbereitung …</span></div>`, null, true);
+  return f => {
+    const b = document.getElementById("laufBalken"), t = document.getElementById("laufText");
+    if (b) b.style.width = Math.max(2, f.prozent) + "%";
+    if (t) t.textContent = `${f.text} · ${f.prozent} %`;
+  };
+}
+function laufErgebnis(e, titel, zeilen) {
+  if (e.abgelehnt) { document.getElementById("schleier").classList.remove("auf"); toast(e.abgebrochen); return; }
+  const vorg = (e.vorgaenge || []).map(v => `${v.art.padEnd(16)} ${v.ziel}${v.wert ? "  =  " + v.wert : ""}`).join("\n");
+  zeigeDialog(`<h2>${esc(titel)}${e.simulation ? " (Simulation)" : ""}</h2>
+    ${e.simulation ? `<p>Es wurde <b>nichts</b> am System verändert. So wäre es gelaufen:</p>` : ""}
+    <div class="vorschau-gruppe"><ul>${zeilen}</ul></div>
+    ${e.simulation && vorg ? `<div class="code-box"><div class="reiter"><button class="an">Was geschrieben worden wäre</button><button class="kopieren" data-a="kopieren">Kopieren</button></div><pre>${esc(vorg)}</pre></div>` : ""}
+    <div class="knoepfe"><button class="knopf voll" data-a="ok">Fertig</button></div>`,
+    a => { if (a === "kopieren") kopiere(vorg); neuMessen(); });
+}
+function laufFehler(titel, err) {
+  protokoll("fehler", titel + ": " + err.message);
+  zeigeDialog(`<h2 style="color:var(--rot)">${esc(titel)}</h2><p>${esc(err.message)}</p><p>Die nächste Messung zeigt den Stand.</p>
+    <div class="knoepfe"><button class="knopf voll" data-a="ok">Schließen</button></div>`, () => neuMessen());
+}
+
+function renderApps() {
+  const a = D.apps || { fehler: "", liste: [] }, liste = a.liste || [];
+  const inst = liste.filter(x => x.installiert);
+  for (const id of [...appsGewaehlt]) if (!inst.some(x => x.id === id)) appsGewaehlt.delete(id);
+  setzeKopf("Apps", `${inst.length} von ${liste.length} installiert`, false);
+  const zeile = x => `<div class="zeile-k"${x.installiert ? "" : ' style="opacity:.5"'}><div class="mitte"><b><i style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--${APP_STUFE[x.stufe][0]})"></i>${esc(x.anzeige)}</b>
+      <div>${esc(x.erklaerung)}${x.warnung ? ` <span style="color:var(--gelb)">${esc(x.warnung)}</span>` : ""}${x.installiert ? "" : " · nicht installiert"}</div></div>
+      <label class="schalter"><input type="checkbox" data-app="${esc(x.id)}" ${appsGewaehlt.has(x.id) ? "checked" : ""} ${x.installiert ? "" : "disabled"}></label></div>`;
+  const gruppe = st => { const l = liste.filter(x => x.stufe === st); return l.length ? `<div class="abschnitt" style="margin-top:14px"><h2>${APP_STUFE[st][1]}</h2></div><div class="liste-k">${l.map(zeile).join("")}</div>` : ""; };
+  document.getElementById("seite").innerHTML = `<div class="seite">
+    <div class="box"><p>Systemkritische Pakete stehen auf einer Schutzliste und werden NIE entfernt. Nicht installierte Apps werden übersprungen.</p><p>Entfernte Apps kommen durch den Rückbau nicht zurück.</p></div>
+    ${a.fehler ? `<div class="box" style="color:var(--rot)">Apps ließen sich nicht abfragen: ${esc(a.fehler)}</div>` : ""}
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${Object.keys(APP_STUFE).map(st => `<button class="knopf still" data-app-stufe="${st}">${APP_STUFE[st][1]} auswählen</button>`).join("")}
+      <button class="knopf still" data-app-stufe="">Auswahl leeren</button>
+      <button class="knopf gefahr" id="btnAppsWeg" ${appsGewaehlt.size ? "" : "disabled"}>Ausgewählte entfernen (${appsGewaehlt.size})</button>
+    </div>
+    ${Object.keys(APP_STUFE).map(gruppe).join("")}
+  </div>`;
+  document.querySelectorAll("[data-app-stufe]").forEach(b => b.addEventListener("click", () => {
+    const st = b.dataset.appStufe, bis = Object.keys(APP_STUFE).indexOf(st);
+    appsGewaehlt.clear();
+    if (st) for (const x of inst) if (!x.browser && Object.keys(APP_STUFE).indexOf(x.stufe) <= bis) appsGewaehlt.add(x.id);
+    protokoll("apps", `Auswahl ${st || "geleert"}: ${[...appsGewaehlt].join(", ") || "–"}`);
+    renderApps();
+  }));
+  document.querySelectorAll("[data-app]").forEach(cb => cb.addEventListener("change", () => {
+    const x = liste.find(y => y.id === cb.dataset.app); if (!x) return;
+    const setzen = an => { if (an) appsGewaehlt.add(x.id); else appsGewaehlt.delete(x.id); protokoll("apps", `${x.id} ${an ? "gewählt" : "abgewählt"}`); renderApps(); };
+    if (!cb.checked || !x.browser) return setzen(cb.checked);
+    cb.checked = false;
+    browserWarnung(x, () => setzen(true));
+  }));
+  document.getElementById("btnAppsWeg").addEventListener("click", appsEntfernen);
+}
+function browserWarnung(x, weiter) {
+  zeigeDialog(`<h2 style="color:var(--rot)">⚠ ${esc(x.anzeige)}</h2>
+    <p>Wenn du Microsoft Edge entfernst und KEIN anderer Browser installiert ist, hast du danach keine Möglichkeit mehr, ins Internet zu gehen – auch nicht, um einen Browser herunterzuladen.</p>
+    <p class="leise">${esc(x.erklaerung)}</p>
+    <p>Tippe zur Bestätigung das Wort BROWSER ein:</p><input id="browserWort" class="eingabe" autocomplete="off" spellcheck="false">
+    <div class="knoepfe"><button class="knopf still" data-a="nein">Abbrechen</button><button class="knopf gefahr" data-a="ja">Bestätigen</button></div>`, a => {
+    const wort = (document.getElementById("browserWort") || {}).value || "";
+    if (a === "ja" && wort.trim().toUpperCase() === "BROWSER") { protokoll("apps", "Edge-Entfernung doppelt bestätigt"); weiter(); }
+    else { protokoll("apps", "Edge nicht bestätigt"); if (a === "ja") toast("Nicht bestätigt – Edge bleibt installiert"); }
+  }, true);
+}
+async function appsEntfernen() {
+  if (!APP) { toast("Nur im Programm verfügbar"); return; }
+  const ids = [...appsGewaehlt]; if (!ids.length) return;
+  protokoll("apps", "entfernen: " + ids.join(", "));
+  const fort = laufDialog("Apps werden entfernt …");
+  let e;
+  try { e = await bruecke("apps", { entfernen: ids }, fort); } catch (err) { return laufFehler("Entfernen fehlgeschlagen", err); }
+  const name = id => (((D.apps || {}).liste || []).find(x => "app:" + x.id === id) || {}).anzeige || id;
+  for (const p of e.punkte || []) if (p.ok) appsGewaehlt.delete(p.id.slice(4));
+  protokoll("apps", "Ergebnis: " + (e.abgebrochen || (e.punkte || []).map(p => `${p.id} ${p.status}${p.grund ? " " + p.grund : ""}`).join(" | ")));
+  laufErgebnis(e, "Apps", (e.punkte || []).map(p => `<li><span>${esc(name(p.id))}</span><span class="flags" ${p.ok ? "" : 'style="color:var(--rot)"'}>${esc(APP_STATUS[p.status] || p.status)}${p.grund ? " – " + esc(p.grund) : ""}</span></li>`).join(""));
+}
+
+function renderKennung() {
+  const g = D.geraetekennung || { echt: 0, orte: [], sperre: false };
+  const net = PUNKTE.find(p => p.id === "NET005");
+  setzeKopf("Gerätekennung", g.echt ? `Echte Kennung gespeichert: ${g.orte.join(", ")}` : "Keine echte Gerätekennung gespeichert", false);
+  const kannWeg = g.echt > 0 && g.sperre;
+  document.getElementById("seite").innerHTML = `<div class="seite">
+    <div class="box"><p>Windows bekommt von Microsoft eine Gerätekennung, die mit jeder Kontoanfrage mitgeht – ein VPN hilft dagegen nicht. Gespeichert ist sie an drei Stellen: in deinem Profil, im Vorlageprofil und im Profil des Systemkontos.</p></div>
+    <div class="liste-k">
+      <div class="zeile-k"><div class="mitte erklaerbar" data-erkl="kennung"><b>Gespeicherte Kennung</b><div>${g.echt ? `<span style="color:var(--gelb)">echt gespeichert: ${esc(g.orte.join(", "))}</span>` : "keine echte Kennung gespeichert"}</div></div></div>
+      <div class="zeile-k"><div class="mitte"><b>${net ? esc(net.id + "  " + net.name) : "Sperre der Microsoft-Adressen"}</b><div>${g.sperre ? "steht" : '<span style="color:var(--rot)">steht nicht – ohne sie holt sich Windows sofort eine neue Kennung</span>'}</div></div>
+        ${!g.sperre && net ? `<button class="klein-knopf" id="btnZuNet005">Zur Einstellung</button>` : ""}</div>
+    </div>
+    <div class="box"><p>Beim Entfernen werden kurz die Dienste für Kontoanmeldung und Geräteverbindungen angehalten, Token-Zwischenspeicher geleert und gespeicherte Microsoft-Konto-Zugangsdaten gelöscht. Danach musst du dich in Office, OneDrive und im Store neu anmelden.</p></div>
+    <div><button class="knopf gefahr" id="btnKennungWeg" ${kannWeg ? "" : "disabled"}>Gerätekennung entfernen</button></div>
+  </div>`;
+  document.querySelectorAll(".erklaerbar[data-erkl]").forEach(m => m.addEventListener("click", () => erklaere(m.dataset.erkl)));
+  const zu = document.getElementById("btnZuNet005");
+  if (zu) zu.addEventListener("click", () => gehe("kategorie", net.kategorie));
+  document.getElementById("btnKennungWeg").addEventListener("click", kennungEntfernen);
+}
+async function kennungEntfernen() {
+  if (!APP) { toast("Nur im Programm verfügbar"); return; }
+  protokoll("kennung", "entfernen");
+  const fort = laufDialog("Gerätekennung wird entfernt …");
+  let e;
+  try { e = await bruecke("geraetekennung", {}, fort); } catch (err) { return laufFehler("Entfernen fehlgeschlagen", err); }
+  const p = (e.punkte || [])[0] || {};
+  protokoll("kennung", "Ergebnis: " + (e.abgebrochen || `${p.status} ${p.grund || ""}`));
+  laufErgebnis(e, p.ok ? "Keine echte Gerätekennung mehr gespeichert" : "Nicht vollständig",
+    (p.schritte || []).map(s => `<li><span>${esc(s)}</span></li>`).join("") + (p.ok ? "" : `<li><span style="color:var(--rot)">${esc(p.grund || p.status || "")}</span></li>`));
+}
+
+// --- Schnappschüsse & Rollback -------------------------------------------
+const MUELL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
+// Fortlaufende Nummer nach der höchsten vorhandenen – nach dem Löschen entstand sonst ein doppelter Name
+function naechsterName(liste, wort) {
+  const n = Math.max(0, ...liste.map(x => { const m = new RegExp("^" + wort + " (\\d+)$").exec(x.name || ""); return m ? +m[1] : 0; }));
+  return `${wort} ${n + 1}`;
+}
+function zustandJetzt() { return Object.fromEntries(PUNKTE.filter(bedienbar).map(p => [p.id, istAn(p)])); }
+// Gemeinsame Aktionen für die Seite „Wiederherstellung“ und die Kachel im Dashboard
+function allesZurueck() {
+  const vorher = vorgemerkt.size;
+  let n = 0; for (const p of PUNKTE) if (bedienbar(p) && p.aktiv) { merke(p, false); n++; }
+  protokoll("rollback", `alles auf den Ausgangszustand: ${n} von OrcaShield gesetzt, ${vorgemerkt.size - vorher} neu vorgemerkt (Rest steht schon auf dem Ausgangszustand)`);
+  if (!n) { toast("OrcaShield hat hier noch nichts gesetzt – es gibt nichts zurückzusetzen"); return; }
+  aktualisiere(); vorschau();
+}
+function sicherungspunktErstellen() {
+  const l = laden("orca-schnapp", []);
+  l.unshift({ name: naechsterName(l, "Sicherungspunkt"), zeit: new Date().toLocaleString("de-DE"), zustand: zustandJetzt() });
+  speichern("orca-schnapp", l); protokoll("rollback", "Sicherungspunkt erstellt: " + l[0].name); toast("Sicherungspunkt erstellt");
+}
+function sicherungspunktWiederherstellen(i) {
+  const s = laden("orca-schnapp", [])[i];
+  if (!s) return;
+  for (const p of PUNKTE) if (bedienbar(p) && p.id in s.zustand) merke(p, s.zustand[p.id]);
+  protokoll("rollback", "Wiederherstellung ausgewählt: " + s.name);
+  aktualisiere(); toast(`Wiederherstellung von „${s.name}“ ausgewählt`);
+}
+function renderSchnapp() {
+  setzeKopf("Wiederherstellung", "Sicherungspunkte für alle OrcaShield-Einstellungen", false);
+  const liste = laden("orca-schnapp", []);
+  document.getElementById("seite").innerHTML = `<div class="seite">
+    <div class="box"><b>Sicherungspunkte</b><p>Ein Sicherungspunkt speichert, welche Einstellungen aktiv sind. Beim Wiederherstellen werden die Unterschiede zur Prüfung vorgelegt, bevor etwas geändert wird. Der Ausgangszustand vor der ersten Änderung ist immer gesichert.</p><p class="leise">Im Entwurf werden Sicherungspunkte im Browser gespeichert, in der App als Datei im Datenordner von OrcaShield.</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="knopf voll" id="btnSnapNeu">Sicherungspunkt erstellen</button><button class="knopf gefahr" id="btnAllesZurueck" data-tip="Setzt alle von OrcaShield verwalteten Einstellungen auf den Zustand vor der ersten Änderung zurück.">Auf Ausgangszustand zurücksetzen</button></div>
+    <div class="liste-k">${liste.length ? liste.map((s, i) => `<div class="zeile-k"><div class="mitte"><b>${esc(s.name)}</b><div>${esc(s.zeit)} · ${Object.values(s.zustand).filter(Boolean).length} Punkte aktiv</div></div>
+      <button class="knopf still" data-snap-zu="${i}">Wiederherstellen</button><button class="muell" data-snap-weg="${i}" aria-label="Sicherungspunkt löschen">${MUELL}</button></div>`).join("") : '<p class="leise">Noch keine Sicherungspunkte.</p>'}</div></div>`;
+  document.getElementById("btnSnapNeu").addEventListener("click", () => { sicherungspunktErstellen(); renderSchnapp(); });
+  document.getElementById("btnAllesZurueck").addEventListener("click", allesZurueck);
+  document.querySelectorAll("[data-snap-zu]").forEach(b => b.addEventListener("click", () => sicherungspunktWiederherstellen(+b.dataset.snapZu)));
+  document.querySelectorAll("[data-snap-weg]").forEach(b => b.addEventListener("click", () => {
+    const i = +b.dataset.snapWeg, s = laden("orca-schnapp", [])[i];
+    if (!s) return;
+    zeigeDialog(`<h2>Sicherungspunkt löschen?</h2><p>„${esc(s.name)}“ vom ${esc(s.zeit)}</p>
+      <div class="knoepfe"><button class="knopf voll" data-a="nein">Behalten</button><button class="knopf gefahr" data-a="ja">Löschen</button></div>`,
+      a => {
+        if (a !== "ja") return;
+        const l = laden("orca-schnapp", []); l.splice(i, 1); speichern("orca-schnapp", l);
+        protokoll("rollback", "Sicherungspunkt gelöscht: " + s.name); renderSchnapp();
+      });
+  }));
+}
+
+// --- Profile ---------------------------------------------------------------
+const PROFILE_FEST = [
+  { name: "Basis", text: "Alle Bereiche auf Basis: die wichtigsten Abschaltungen, ohne Nebenwirkungen.", stufe: "gruen", farbe: "var(--gruen)" },
+  { name: "Erweitert", text: "Alle Bereiche auf Erweitert: alles, was ohne spürbare Nachteile geht – die Empfehlung.", stufe: "gelb", farbe: "var(--gelb)" },
+  { name: "Maximal", text: "Alle Bereiche auf Maximal: höchster Datenschutz, auch mit spürbarer Folge.", stufe: "rot", farbe: "var(--rot)" },
+];
+const PROFIL_BLAU = "#4c8dff";
+// Zustand eines Profils: "aktiv" (so ist der Rechner eingestellt), "ausgewaehlt"
+// (vorgemerkt, noch nicht angewendet) oder "".
+function profilZustand(passt) {
+  const gemessen = PUNKTE.filter(bedienbar).every(p => passt(p, p.status === "Erfuellt"));
+  if (gemessen && !vorgemerkt.size) return "aktiv";
+  return PUNKTE.filter(bedienbar).every(p => passt(p, istAn(p))) ? "ausgewaehlt" : "";
+}
+function festZustand(pr) {
+  const kats = new Set(KATS.filter(k => k.name !== "Experimentell").map(k => k.name));
+  return profilZustand((p, an) => !kats.has(p.kategorie) || !empfohlen(p) || an === gehoertZu(p, pr.stufe));
+}
+function eigenZustand(pr) { return profilZustand((p, an) => !(p.id in pr.zustand) || an === pr.zustand[p.id]); }
+function profilZeile(name, text, farbe, zustand, knoepfe) {
+  const marke = zustand === "aktiv" ? "aktiv" : zustand === "ausgewaehlt" ? "ausgewählt – noch nicht angewendet" : "";
+  return `<div class="zeile-k profil ${zustand}" style="--pf:${farbe}"><i class="profil-farbe"></i><div class="mitte"><b>${esc(name)}</b>${marke ? `<span class="profil-marke">${marke}</span>` : ""}<div>${esc(text)}</div></div>${knoepfe}</div>`;
+}
+function renderProfile() {
+  setzeKopf("Profile", "Gespeicherte Konfigurationen für alle Bereiche", false);
+  const eigene = laden("orca-profile", []);
+  document.getElementById("seite").innerHTML = `<div class="seite">
+    <div class="liste-k">${PROFILE_FEST.map((p, i) => profilZeile(p.name, p.text, p.farbe, festZustand(p), `<button class="knopf still" data-prof-fest="${i}">Auswählen</button>`)).join("")}</div>
+    <div class="abschnitt" style="margin-top:10px"><h2>Eigene Profile</h2></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="knopf" id="btnProfSpeichern">Aktuelle Konfiguration speichern</button><button class="knopf still" id="btnProfImport">Importieren …</button><input type="file" id="profDatei" accept=".json,application/json" hidden></div>
+    <div class="liste-k">${eigene.length ? eigene.map((p, i) => profilZeile(p.name, `${p.zeit} · ${Object.values(p.zustand).filter(Boolean).length} Punkte aktiv`, p.farbe || PROFIL_BLAU, eigenZustand(p),
+      `<input type="color" class="profil-waehler" data-prof-farbe="${i}" value="${esc(p.farbe || PROFIL_BLAU)}" aria-label="Farbe des Profils" data-tip="Farbe des Profils">
+       <button class="knopf still" data-prof="${i}">Auswählen</button><button class="klein-knopf" data-prof-export="${i}">Export</button><button class="muell" data-prof-weg="${i}" aria-label="Profil löschen">${MUELL}</button>`)).join("")
+      : '<p class="leise">Noch keine eigenen Profile. Exportierte Profile lassen sich auf anderen Rechnern importieren.</p>'}</div></div>`;
+  document.querySelectorAll("[data-prof-fest]").forEach(b => b.addEventListener("click", () => {
+    const pr = PROFILE_FEST[+b.dataset.profFest]; for (const k of KATS) if (k.name !== "Experimentell") setzeStufe(k.name, pr.stufe);
+    protokoll("profil", "ausgewählt: " + pr.name); aktualisiere(); toast(`Profil „${pr.name}“ ausgewählt`);
+  }));
+  document.getElementById("btnProfSpeichern").addEventListener("click", () => {
+    const l = laden("orca-profile", []); l.unshift({ name: naechsterName(l, "Mein Profil"), zeit: new Date().toLocaleString("de-DE"), version: D.version, farbe: PROFIL_BLAU, zustand: zustandJetzt() });
+    speichern("orca-profile", l); protokoll("profil", "gespeichert: " + l[0].name); renderProfile(); toast("Profil gespeichert");
+  });
+  document.getElementById("btnProfImport").addEventListener("click", () => document.getElementById("profDatei").click());
+  document.getElementById("profDatei").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    f.text().then(txt => {
+      try { const p = JSON.parse(txt); if (!p.zustand) throw 0; const l = laden("orca-profile", []); l.unshift(p); speichern("orca-profile", l); protokoll("profil", "importiert: " + p.name); renderProfile(); toast(`„${p.name}“ importiert`); }
+      catch { toast("Keine gültige Profildatei"); }
+    });
+  });
+  document.querySelectorAll("[data-prof]").forEach(b => b.addEventListener("click", () => {
+    const p = laden("orca-profile", [])[+b.dataset.prof]; for (const x of PUNKTE) if (bedienbar(x) && x.id in p.zustand) merke(x, p.zustand[x.id]);
+    protokoll("profil", "ausgewählt: " + p.name); aktualisiere(); toast(`Profil „${p.name}“ ausgewählt`);
+  }));
+  document.querySelectorAll("[data-prof-farbe]").forEach(w => w.addEventListener("change", () => {
+    const l = laden("orca-profile", []), i = +w.dataset.profFarbe; if (!l[i]) return;
+    l[i].farbe = w.value; speichern("orca-profile", l); protokoll("profil", `Farbe ${l[i].name}: ${w.value}`); renderProfile();
+  }));
+  document.querySelectorAll("[data-prof-export]").forEach(b => b.addEventListener("click", () => {
+    const p = laden("orca-profile", [])[+b.dataset.profExport];
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(p, null, 2)], { type: "application/json" }));
+    a.download = p.name.replace(/[^\w\- ]/g, "") + ".orcaprofil.json"; a.click(); URL.revokeObjectURL(a.href);
+  }));
+  document.querySelectorAll("[data-prof-weg]").forEach(b => b.addEventListener("click", () => {
+    const i = +b.dataset.profWeg, p = laden("orca-profile", [])[i]; if (!p) return;
+    zeigeDialog(`<h2>Profil löschen?</h2><p>„${esc(p.name)}“</p><div class="knoepfe"><button class="knopf voll" data-a="nein">Behalten</button><button class="knopf gefahr" data-a="ja">Löschen</button></div>`,
+      a => { if (a !== "ja") return; const l = laden("orca-profile", []); l.splice(i, 1); speichern("orca-profile", l); protokoll("profil", "gelöscht: " + p.name); renderProfile(); });
+  }));
+}
+
+// --- Verlauf -------------------------------------------------------------
+const verlaufStufe = s => /FEHLER|ALARM/.test(s) ? "fehler" : /WARN/.test(s) ? "warn" : "";
+function verlaufZeile(v) {
+  return `<div class="v-zeile ${verlaufStufe(v.stufe)}"><time>${esc(v.datum.slice(0, 6))} ${esc(v.zeit.slice(0, 5))}</time><div class="t"><b>${esc(v.quelle.toLowerCase())}</b>${esc(v.text)}</div></div>`;
+}
+function letzteZurueckgestellt() {
+  const v = D.verlauf || []; let i = v.length - 1;
+  while (i >= 0 && !/Wächter gestartet/.test(v[i].text)) i--;
+  if (i < 0) return [];
+  return v.slice(i).filter(x => /zurückgestellt: /.test(x.text)).map(x => x.text.replace(/^.*zurückgestellt: /, "").split(" ")[0]);
+}
+function fuelleVerlaufDrop() {
+  const v = (D && D.verlauf) || [];
+  document.getElementById("verlaufListe").innerHTML = v.slice(-30).reverse().map(verlaufZeile).join("") || '<div class="v-zeile"><div></div><div class="t">Noch keine Einträge.</div></div>';
+}
+function renderVerlauf() {
+  setzeKopf("Verlauf", "Jede Änderung, jede Prüfung – aus dem Protokoll", false);
+  const v = (D.verlauf || []).slice().reverse();
+  document.getElementById("seite").innerHTML = `<div class="seite"><div class="chips" id="vFilter">
+      <button class="chip an" data-v="">Alles</button><button class="chip" data-v="warn">Warnungen</button><button class="chip" data-v="fehler">Fehler</button><button class="chip" data-v="zurueck">Zurückgestellt</button></div>
+    <div class="box" style="padding:0;overflow:hidden" id="vListe">${v.map(verlaufZeile).join("")}</div></div>`;
+  document.querySelectorAll("#vFilter .chip").forEach(c => c.addEventListener("click", () => {
+    document.querySelectorAll("#vFilter .chip").forEach(x => x.classList.toggle("an", x === c));
+    const f = c.dataset.v;
+    document.getElementById("vListe").innerHTML = v.filter(x => !f || (f === "zurueck" ? /zurückgestellt/.test(x.text) : verlaufStufe(x.stufe) === f)).map(verlaufZeile).join("");
+  }));
+}
+
+// --- Bekannt, Über ----------------------------------------------------------
+function renderBekannt() {
+  setzeKopf("Nicht unterstützt", "Bekannte Optionen, die OrcaShield bewusst nicht setzt – mit Begründung", false);
+  let html = '<div class="raster">', letzte = null;
+  for (const b of D.bekannt || []) {
+    if (b.kategorie !== letzte) { html += `<div class="gruppe-titel"><h2>${esc(katName(b.kategorie))}</h2></div>`; letzte = b.kategorie; }
+    html += `<article class="karte nv" data-e=""><div class="karte-text"><h3>${esc(b.name)}</h3><div class="meta"><span>${esc(b.art)}</span></div></div><p class="karte-erkl" style="-webkit-line-clamp:unset">${esc(b.grund)}</p></article>`;
+  }
+  document.getElementById("seite").innerHTML = html + "</div>";
+}
+function renderUeber() {
+  setzeKopf("Über & Lizenzen", `OrcaShield ${PRODUKT}${D.versionDatum ? " vom " + D.versionDatum : ""}`, false);
+  // Wer OrcaShield gemacht hat – als Text zum Kopieren, nicht als Link:
+  // die Oberfläche öffnet keine Verbindung nach außen.
+  const kontakte = [["Telegram", "@Seba5ti4n"], ["Discord", "se_b4sti_4n"], ["GitHub", "Seb45ti4n"]];
+  document.getElementById("seite").innerHTML = `<div class="seite">
+    <div class="box macher"><div class="orca-gross klein">${orcaSvg()}</div><div><b>Gemacht von Seba5ti4n</b>
+      <div class="kontakte">${kontakte.map(([n, w]) => `<button class="klein-knopf" data-kopie="${esc(w)}" data-tip="Zum Kopieren klicken">${esc(n)} <span class="mono">${esc(w)}</span></button>`).join("")}</div></div></div>
+    <div class="box"><b>OrcaShield sendet nichts.</b><p>Keine Telemetrie, kein Konto, keine Updateprüfung, keine Verbindung ins Internet. Alles, was OrcaShield misst und schreibt, bleibt auf diesem Rechner: Protokolle, Ausgangszustand und Sicherungspunkte liegen im Datenordner von OrcaShield (C:\\ProgramData\\OrcaShield), geschützt vor Änderungen ohne Administratorrechte. Nachprüfbar: Der Quelltext ist lesbar, jede Änderung steht im Verlauf.</p></div>
+    <div class="box"><b>Volle Transparenz.</b><p>Zu jeder Einstellung zeigt OrcaShield den PowerShell-Befehl, mit dem du sie selbst setzt oder zurücknimmst. Nichts wird gesetzt, bevor du die Vorschau bestätigt hast. Vor der ersten Änderung wird der Ausgangszustand gemessen und gesichert.</p></div>
+    <div class="box"><b>Quelltext und neue Versionen</b>
+      <p>OrcaShield sucht nicht selbst nach Updates. Neue Versionen und den vollständigen Quelltext findest du auf der Projektseite: <button class="link-knopf" data-link="https://github.com/Seb45ti4n/OrcaShield">github.com/Seb45ti4n/OrcaShield</button></p></div>
+    <div><button class="knopf still" id="btnIntro">Einführung noch einmal ansehen</button></div>
+    <div class="ueber-orca" aria-hidden="true"><svg viewBox="0 0 34 18"><use href="#orca"/></svg>
+      <span class="blas">${Array.from({ length: 13 }, (_, i) => `<i style="--i:${i}"></i>`).join("")}</span></div>
+  </div>`;
+  document.querySelectorAll("[data-kopie]").forEach(b => b.addEventListener("click", () => kopiere(b.dataset.kopie)));
+  // Der einzige Link nach außen öffnet den Standardbrowser; die Adresse ist im Programm fest hinterlegt.
+  document.querySelectorAll("[data-link]").forEach(b => b.addEventListener("click", () => {
+    if (APP) bruecke("oeffnen", { url: b.dataset.link }).catch(e => toast(e.message));
+    else window.open(b.dataset.link, "_blank", "noopener");
+  }));
+  document.getElementById("btnIntro").addEventListener("click", () => intro());
+}
+
+// --- Bestandsaufnahme beim ersten Start --------------------------------------
+// Im Programm läuft dabei die echte Messung: oben der Fortschritt (wie eine
+// Echoortung, die Bereich für Bereich abtastet), danach das Ergebnis je Bereich.
+function bestandsaufnahmeStart() {
+  const o = document.getElementById("overlay");
+  o.innerHTML = `<div class="bestand"><div class="orca-gross">${orcaSvg()}</div><h2>Bestandsaufnahme</h2>
+    <p>Der aktuelle Zustand des Systems wird ermittelt. Es wird nichts verändert.</p>
+    <div class="mess-fortschritt" id="messFortschritt"><div class="balken"><i id="messBalken" style="width:2%"></i></div><span id="messText">Engine wird gestartet …</span></div>
+    <div class="scan" id="scan"></div>
+    <div style="display:flex;justify-content:center"><button class="knopf voll" id="btnBestandOk" style="visibility:hidden">Weiter</button></div></div>`;
+  o.classList.add("auf");
+  return {
+    fortschritt(prozent, text) {
+      document.getElementById("messBalken").style.width = Math.max(2, prozent) + "%";
+      document.getElementById("messText").textContent = `${katName(text) || text || "Messung"} · ${prozent} %`;
+    },
+    fertig() { document.getElementById("messFortschritt").remove(); bestandsaufnahme(true); },
+    fehler(text) { document.getElementById("messText").textContent = text; document.getElementById("messText").classList.add("fehlertext"); },
+  };
+}
+function bestandsaufnahme(schonOffen = false) {
+  const o = document.getElementById("overlay");
+  if (!schonOffen) {
+    o.innerHTML = `<div class="bestand"><div class="orca-gross">${orcaSvg()}</div><h2>Bestandsaufnahme</h2>
+      <p>Der aktuelle Zustand des Systems wird ermittelt. Es wird nichts verändert.</p><div class="scan" id="scan"></div>
+      <div style="display:flex;justify-content:center"><button class="knopf voll" id="btnBestandOk" style="visibility:hidden">Weiter</button></div></div>`;
+    o.classList.add("auf");
+  }
+  const scan = document.getElementById("scan");
+  const kats = KATS.filter(k => k.name !== "Experimentell");
+  kats.forEach((k, i) => {
+    const l = PUNKTE.filter(p => p.kategorie === k.name && bedienbar(p)), an = l.filter(p => p.status === "Erfuellt").length;
+    const z = document.createElement("div"); z.className = "scan-zeile";
+    z.innerHTML = `<span>${esc(k.anzeige)}</span><div class="balken"><i style="width:0"></i></div><span class="zahl">${an}/${l.length}</span>`;
+    scan.appendChild(z);
+    setTimeout(() => { z.classList.add("da"); z.querySelector("i").style.width = (l.length ? an / l.length * 100 : 0) + "%"; }, 140 * i + 200);
+  });
+  setTimeout(() => { document.getElementById("btnBestandOk").style.visibility = "visible"; }, 140 * kats.length + 500);
+  document.getElementById("btnBestandOk").addEventListener("click", () => { o.classList.remove("auf"); speichern("orca-erststart", true); });
+}
+
+// ==============================================================
+//  Ring, Leiste, Vorschau
+// ==============================================================
+function aktualisiereRing() {
+  const b = PUNKTE.filter(p => bedienbar(p) && empfohlen(p));
+  const an = b.filter(istAn).length, pr = b.length ? Math.round(an / b.length * 100) : 0;
+  document.getElementById("ring").style.setProperty("--p", pr);
+  document.getElementById("ringZahl").textContent = pr + "%";
+  document.getElementById("ringText").innerHTML = `<b>${an} von ${b.length}</b><br>empfohlenen Einstellungen aktiv`;
+  if (pr === 100) { const l = document.getElementById("logoOrca"); l.classList.remove("sprung"); void l.offsetWidth; l.classList.add("sprung"); }
+}
+function aktualisiereLeiste() {
+  const n = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size;
+  document.getElementById("nAenderungen").textContent = n;
+  document.getElementById("leiste").classList.toggle("weg", n === 0);
+}
+function aktualisiere() {
+  aktualisiereLeiste();
+  if (!D) return;
+  aktualisiereRing();
+  const scroll = document.getElementById("inhalt").scrollTop;
+  baueNav(); render();
+  document.getElementById("inhalt").scrollTop = scroll;
+}
+
+// Gemessener Zustand von Wächter und Bereinigung (ältere Messdaten ohne waechterAktiv: Wächter gilt als an)
+const automatikIst = n => n === "waechter" ? (D && D.waechterAktiv !== undefined ? !!D.waechterAktiv : true) : !!(D && D.bereinigungAktiv);
+function zeigeDialog(html, fertig, fest = false) {
+  const s = document.getElementById("schleier"), d = document.getElementById("dialog");
+  d.innerHTML = html; s.classList.add("auf");
+  const titel = (d.querySelector("h2")?.textContent || "").trim();
+  protokoll("dialog", "geöffnet: " + titel);
+  const zu = a => { protokoll("dialog", `„${titel}“ → ${a}`); s.classList.remove("auf"); if (fertig) fertig(a); };
+  d.querySelectorAll("[data-a]").forEach(b => b.addEventListener("click", () => zu(b.dataset.a)));
+  // Warnungen ("fest") schließen nur über den Knopf - nicht per Klick daneben oder Esc.
+  s.onclick = e => { if (e.target === s && !fest) zu("abbruch"); };
+  zeigeDialog.zu = fest ? null : () => zu("abbruch");
+  const f = d.querySelector(".knopf.voll"); if (f) f.focus();
+}
+
+function vorschau() {
+  const ein = PUNKTE.filter(p => vorgemerkt.get(p.id) === true), aus = PUNKTE.filter(p => vorgemerkt.get(p.id) === false);
+  const neustart = p => ["Hypervisor", "Feature", "DeviceGuard"].includes(p.typ) || p.kategorie === "Leistung";
+  const flags = p => [p.senktSchutz ? "⚠ Sicherheitsrisiko" : "", p.grautAus ? "Richtlinie" : "", neustart(p) ? "Neustart erforderlich" : ""].filter(Boolean).join(" · ");
+  const li = p => `<li><span class="mono">${esc(p.id)}</span><span>${esc(p.name)}</span><span class="flags" ${p.senktSchutz ? 'style="color:var(--rot)"' : ""}>${esc(flags(p))}</span></li>`;
+  const wAus = [...waechterVorgemerkt].filter(([, v]) => !v).map(([k]) => k), wAn = [...waechterVorgemerkt].filter(([, v]) => v).map(([k]) => k);
+  let skript = "# OrcaShield – vorgemerkte Änderungen (Administrator-PowerShell)\n";
+  for (const p of ein) skript += `\n# ${p.id} ${p.name}\n${befehle(p).an}\n`;
+  for (const p of aus) skript += `\n# ${p.id} ${p.name} – zurück auf den Ausgangszustand\n${befehle(p).zurueck}\n`;
+  for (const [n, v] of assistentVorgemerkt) {
+    if (n === "waechter") skript += `\n# Anmelde-Wächter ${v ? "einschalten" : "ausschalten"}\n${v ? "Enable" : "Disable"}-ScheduledTask -TaskPath '\\' -TaskName '${D.aufgabe || "OrcaShield-Waechter"}'\n`;
+    else skript += `\n# Herunterfahren-Assistent ${v ? "eintragen" : "austragen"} – über OrcaShield (lokale Gruppenrichtlinie)\n`;
+  }
+  if (wAus.length || wAn.length) skript += `\n# Prüfbereiche des Wächters – OrcaShield vermerkt sie in seiner Zustandsdatei${wAus.length ? "\n#   ausschalten: " + wAus.join(", ") : ""}${wAn.length ? "\n#   einschalten: " + wAn.join(", ") : ""}\n`;
+  const ers = ein.filter(p => p.senktSchutz).length, sperr = ein.filter(p => p.grautAus).length, ns = [...ein, ...aus].filter(neustart).length;
+  zeigeDialog(`<h2>Änderungen prüfen</h2>
+    <p>Diese Änderungen werden beim Anwenden ausgeführt. Jede Einstellung wird gesetzt, sofort nachgeprüft und erst dann als aktiv gemeldet.${!APP ? " (Im Entwurf wird nichts geschrieben.)" : SIMULATION ? " <b>Simulationsmodus:</b> Es wird nichts verändert – du siehst, was geschehen würde." : ""}</p>
+    ${ers ? `<div class="box warnung"><b>${ers} ${ers > 1 ? "Sicherheitsrisiken" : "Sicherheitsrisiko"}:</b> verringert den Schutz des Systems.</div>` : ""}
+    ${sperr || ns ? `<div class="box">${sperr ? `<b>${sperr}</b> per Richtlinie – der zugehörige Schalter in Windows wird gesperrt. ` : ""}${ns ? `<b>${ns}</b> erfordern einen Neustart.` : ""}</div>` : ""}
+    ${ein.length ? `<div class="vorschau-gruppe"><h3>Aktivieren · ${ein.length}</h3><ul>${ein.map(li).join("")}</ul></div>` : ""}
+    ${aus.length ? `<div class="vorschau-gruppe"><h3>Zurücksetzen · ${aus.length}</h3><ul>${aus.map(li).join("")}</ul></div>` : ""}
+    ${assistentVorgemerkt.size || wAus.length || wAn.length ? `<div class="vorschau-gruppe"><h3>Überwachung & Automatik</h3><ul>${[...assistentVorgemerkt].map(([n, v]) => `<li><span class="mono"></span><span>${n === "waechter" ? "Wächter" : "Bereinigung beim Herunterfahren"}: ${v ? "ein" : "aus"}</span></li>`).join("")}${[...wAus.map(x => x + ": aus"), ...wAn.map(x => x + ": ein")].map(x => `<li><span class="mono"></span><span>Prüfbereich ${esc(x)}</span></li>`).join("")}</ul></div>` : ""}
+    <div class="code-box"><div class="reiter"><button class="an">PowerShell</button><button class="kopieren" data-a="kopieren">Kopieren</button></div><pre>${esc(skript)}</pre></div>
+    <div class="knoepfe"><button class="knopf still" data-a="zu">Zurück</button>${APP && (ein.length || aus.length || assistentVorgemerkt.size || wAus.length || wAn.length)
+      ? `<button class="knopf voll" data-a="anwenden">${SIMULATION ? "Simulieren" : "Anwenden"}</button>`
+      : '<button class="knopf voll" data-a="ok">Schließen</button>'}</div>`,
+    a => { if (a === "kopieren") { kopiere(skript); setTimeout(vorschau, 50); } if (a === "anwenden") setTimeout(anwendenImProgramm, 30); });
+}
+
+// ==============================================================
+//  Bedienung
+// ==============================================================
+document.getElementById("btnAnwenden").addEventListener("click", vorschau);
+document.getElementById("btnVerwerfen").addEventListener("click", () => { vorgemerkt.clear(); waechterVorgemerkt.clear(); assistentVorgemerkt.clear(); aktualisiere(); toast("Vormerkungen verworfen"); });
+document.getElementById("ringBox").addEventListener("click", () => springe("dashboard"));
+
+// --- Einblendungen: ein Element, immer ganz im Fenster -----------------------
+(function () {
+  const tipp = document.getElementById("tipp");
+  let ziel = null, uhr = null;
+  const weg = () => { clearTimeout(uhr); ziel = null; tipp.classList.remove("zeigt"); };
+  function zeige(el) {
+    tipp.textContent = el.dataset.tip;
+    tipp.style.left = "0px"; tipp.style.top = "0px";
+    const r = el.getBoundingClientRect(), b = tipp.getBoundingClientRect(), rand = 10;
+    let x = r.left + r.width / 2 - b.width / 2;
+    x = Math.max(rand, Math.min(x, window.innerWidth - b.width - rand));
+    let y = r.top - b.height - 8;
+    if (el.hasAttribute("data-tip-unten") || y < rand) y = r.bottom + 8;
+    if (y + b.height > window.innerHeight - rand) y = Math.max(rand, r.top - b.height - 8);
+    tipp.style.left = x + "px"; tipp.style.top = y + "px";
+    tipp.classList.add("zeigt");
+  }
+  document.addEventListener("mouseover", e => {
+    const el = e.target.closest("[data-tip]");
+    if (el === ziel) return;
+    weg();
+    if (!el || !el.dataset.tip) return;
+    ziel = el; uhr = setTimeout(() => { if (ziel === el) zeige(el); }, 450);
+  });
+  document.addEventListener("mousedown", weg, true);
+  document.addEventListener("scroll", weg, true);
+  window.addEventListener("blur", weg);
+})();
+document.getElementById("btnSendetNichts").addEventListener("click", () => gehe("ueber"));
+document.getElementById("btnVerlauf").addEventListener("click", e => { e.stopPropagation(); fuelleVerlaufDrop(); document.getElementById("verlaufDrop").classList.toggle("auf"); });
+document.getElementById("btnVerlaufGross").addEventListener("click", () => { document.getElementById("verlaufDrop").classList.remove("auf"); gehe("verlauf"); });
+document.addEventListener("click", e => { if (!e.target.closest(".verlauf-wrap")) document.getElementById("verlaufDrop").classList.remove("auf"); });
+document.getElementById("btnStand").addEventListener("click", () => APP ? neuMessen(true) : zeigeDialog(`<h2>Stand prüfen</h2>
+  <p>In der App misst OrcaShield hier alle Punkte neu und zeigt, was Windows seit der letzten Prüfung verstellt hat. Beim Start passiert das ohnehin.</p>
+  <p>Im Entwurf erzeugt dieser Befehl die Messdaten neu (Administrator-PowerShell, ändert nichts), danach die Seite neu laden:</p>
+  <div class="code-box"><pre>powershell.exe -NoProfile -ExecutionPolicy Bypass -File '.\\Werkzeuge\\Gui-Daten.ps1'</pre></div>
+  <div class="knoepfe"><button class="knopf voll" data-a="ok">Gut</button></div>`));
+const suchFeld = document.getElementById("suche");
+suchFeld.addEventListener("input", () => {
+  suchtext = suchFeld.value.trim().toLowerCase();
+  clearTimeout(suchFeld.protUhr); suchFeld.protUhr = setTimeout(() => protokoll("suche", `„${suchtext}“`), 700);
+  if (suchtext === "orca") platsch();
+  // Suchen filtert die Karten unter „Alle Einstellungen“ und springt dorthin.
+  if (!istEinseiter()) { ansicht = { art: "alle", wert: null }; render(); }
+  renderAlleInhalt();
+  if (suchtext) springe("alle"); else folgeScroll();
+});
+function platsch() {
+  const p = document.getElementById("platscher"); p.innerHTML = "";
+  for (let i = 0; i < 7; i++) {
+    const d = document.createElement("i"); d.style.setProperty("--dx", (Math.random() * 30 - 15) + "px"); d.style.setProperty("--dy", (-8 - Math.random() * 16) + "px");
+    p.appendChild(d);
+  }
+  setTimeout(() => { p.innerHTML = ""; }, 1000);
+}
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement !== suchFeld) { e.preventDefault(); suchFeld.focus(); }
+  if (e.key === "Escape") {
+    if (document.getElementById("schleier").classList.contains("auf") && zeigeDialog.zu) zeigeDialog.zu();  // Warnungen haben kein zu()
+    document.getElementById("schublade").classList.remove("auf");
+    document.getElementById("verlaufDrop").classList.remove("auf");
+  }
+});
+
+// ==============================================================
+//  Anpassen
+// ==============================================================
+const VORGABE = { sprache: "de", spalten: "4", spaltenKat: "4", theme: "dark", akzent: "#4cc3ff", dichte: "normal", ansicht: "raster", ecken: "normal", schrift: 15, technik: "an", bewegung: "an", wellen: "an" };
+const FARBEN = [["#4cc3ff", "Eisblau"], ["#5b8cff", "Tiefsee"], ["#46c98b", "Nordlicht"], ["#a78bfa", "Polarnacht"], ["#e8edf3", "Schnee"], ["#8b949e", "Fels"]];
+let opt = { ...VORGABE, ...laden("orca-gui2", {}) };
+// Adresszusatz: ?seite=verlauf&thema=dunkel (auch #dunkel / #hell) - für Lesezeichen und Vorschaubilder
+const ADRESSE = new URLSearchParams(location.search);
+const vorschauSprache = ["de", "en"].includes(ADRESSE.get("sprache")) ? ADRESSE.get("sprache") : null;
+const vorschauThema = (location.hash === "#hell" || ADRESSE.get("thema") === "hell") ? "light" : (location.hash === "#dunkel" || ADRESSE.get("thema") === "dunkel") ? "dark" : null;
+function wendeAn() {
+  const r = document.documentElement;
+  SP = vorschauSprache || opt.sprache;
+  r.lang = SP;
+  r.dataset.theme = vorschauThema || opt.theme;
+  for (const k of ["dichte", "ansicht", "ecken", "technik", "bewegung", "wellen", "spalten", "spaltenKat"]) r.dataset[k] = opt[k];
+  r.style.setProperty("--akzent", opt.akzent);
+  r.style.setProperty("--schrift", opt.schrift + "px");
+  document.getElementById("schrift").value = opt.schrift;
+  document.getElementById("schriftWert").textContent = opt.schrift + " px";
+  document.querySelectorAll(".segment").forEach(s => s.querySelectorAll("button").forEach(b => b.classList.toggle("an", opt[s.dataset.opt] === b.dataset.v)));
+  document.querySelectorAll(".farbe").forEach(f => f.classList.toggle("an", f.dataset.c.toLowerCase() === opt.akzent.toLowerCase()));
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = t(el.dataset.t); });
+  suchFeld.placeholder = t("suchen");
+  UEB.setze(SP);
+  // Die Rückfrage im Programmfenster in derselben Sprache
+  if (APP && wendeAn.sp !== SP) { wendeAn.sp = SP; bruecke("sprache", { sprache: SP }).catch(() => { }); }
+  speichern("orca-gui2", opt);
+}
+document.getElementById("farben").innerHTML = FARBEN.map(([c, n]) => `<button class="farbe" data-c="${c}" title="${n}" style="background:${c}"></button>`).join("") + `<input type="color" id="eigeneFarbe" title="Eigene Farbe">`;
+document.querySelectorAll(".farbe").forEach(f => f.addEventListener("click", () => { opt.akzent = f.dataset.c; wendeAn(); }));
+document.getElementById("eigeneFarbe").addEventListener("input", e => { opt.akzent = e.target.value; wendeAn(); });
+document.querySelectorAll(".segment").forEach(s => s.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; opt[s.dataset.opt] = b.dataset.v; wendeAn(); if (s.dataset.opt === "sprache") aktualisiere(); }));
+document.getElementById("schrift").addEventListener("input", e => { opt.schrift = +e.target.value; wendeAn(); });
+document.getElementById("btnAnpassen").addEventListener("click", () => document.getElementById("schublade").classList.add("auf"));
+document.addEventListener("click", e => {
+  const s = document.getElementById("schublade");
+  if (s.classList.contains("auf") && !e.target.closest("#schublade") && !e.target.closest("#btnAnpassen")) s.classList.remove("auf");
+});
+document.getElementById("btnZuruecksetzen").addEventListener("click", () => { opt = { ...VORGABE }; wendeAn(); aktualisiere(); toast("Auf Vorgabe zurückgesetzt"); });
+
+const STATUS_TEXT = {
+  Gesetzt: "gesetzt und nachgeprüft", Unveraendert: "stand bereits richtig", NeustartNoetig: "gesetzt – wirkt nach einem Neustart",
+  NichtVorhanden: "gibt es auf diesem Gerät nicht", NichtAnwendbar: "wirkt auf diesem Gerät nicht", Offen: "noch offen",
+  Zurueckgesetzt: "auf den Ausgangszustand zurückgesetzt", Fehler: "fehlgeschlagen", Unbekannt: "unbekannte Kennung",
+};
+async function anwendenImProgramm() {
+  const ein = PUNKTE.filter(p => vorgemerkt.get(p.id) === true).map(p => p.id);
+  const aus = PUNKTE.filter(p => vorgemerkt.get(p.id) === false).map(p => p.id);
+  const auto = {
+    waechter: assistentVorgemerkt.has("waechter") ? (assistentVorgemerkt.get("waechter") ? "ein" : "aus") : "",
+    bereinigung: assistentVorgemerkt.has("herunterfahren") ? (assistentVorgemerkt.get("herunterfahren") ? "ein" : "aus") : "",
+    bereicheAus: [...waechterVorgemerkt].filter(([, v]) => !v).map(([k]) => k),
+    bereicheAn: [...waechterVorgemerkt].filter(([, v]) => v).map(([k]) => k),
+  };
+  const mitAuto = !!(auto.waechter || auto.bereinigung || auto.bereicheAus.length || auto.bereicheAn.length);
+  if (!ein.length && !aus.length && !mitAuto) { toast("Nichts zum Anwenden"); return; }
+  protokoll("anwenden", `${SIMULATION ? "Simulation" : "echt"} · ein: ${ein.join(", ") || "–"} · zurück: ${aus.join(", ") || "–"}` + (mitAuto ? ` · Automatik: ${JSON.stringify(auto)}` : ""));
+  zeigeDialog(`<h2>Wird angewendet …</h2>
+    <p>Zuerst wird der Ausgangszustand gesichert, dann jede Einstellung gesetzt und sofort nachgeprüft.</p>
+    <div class="mess-fortschritt"><div class="balken"><i id="anwBalken" style="width:2%"></i></div><span id="anwText">Vorbereitung …</span></div>`, null, true);
+  const fort = f => {
+    const b = document.getElementById("anwBalken"), t = document.getElementById("anwText");
+    if (b) b.style.width = Math.max(2, f.prozent) + "%";
+    if (t) t.textContent = `${f.text} · ${f.prozent} %`;
+  };
+  let erg = { simulation: SIMULATION, punkte: [], vorgaenge: [] };
+  try {
+    erg = await bruecke("anwenden", mitAuto ? { ein, aus, automatik: auto } : { ein, aus }, fort);
+    if (!erg.abgebrochen && erg.automatikAbgebrochen) erg.punkte = [...(erg.punkte || []), ...["waechter", "herunterfahren"].filter(n => assistentVorgemerkt.has(n)).concat([...waechterVorgemerkt.keys()].map(k => "bereich:" + k))
+      .map(id => ({ id, richtung: "", ok: false, status: "Fehler", grund: erg.automatikAbgebrochen }))];
+  } catch (e) {
+    zeigeDialog(`<h2 style="color:var(--rot)">Anwenden fehlgeschlagen</h2><p>${esc(e.message)}</p><p>Es kann sein, dass ein Teil schon gesetzt wurde – die nächste Messung zeigt den Stand.</p>
+      <div class="knoepfe"><button class="knopf voll" data-a="ok">Schließen</button></div>`, () => neuMessen());
+    return;
+  }
+  if (erg.abgelehnt) { document.getElementById("schleier").classList.remove("auf"); protokoll("anwenden", "im Programmfenster nicht bestätigt"); toast(erg.abgebrochen); return; }
+  if (erg.abgebrochen) {
+    zeigeDialog(`<h2 style="color:var(--rot)">Nicht angewendet</h2><p>${esc(erg.abgebrochen)}</p>
+      <div class="knoepfe"><button class="knopf voll" data-a="ok">Schließen</button></div>`);
+    return;
+  }
+  const punkte = erg.punkte || [];
+  const gut = punkte.filter(p => p.ok), schlecht = punkte.filter(p => !p.ok);
+  protokoll("anwenden", `Ergebnis: ${gut.length} gelungen, ${schlecht.length} nicht` + (schlecht.length ? " – " + schlecht.map(r => `${r.id} ${r.status}: ${r.grund}`).join(" | ") : ""));
+  for (const r of punkte.filter(x => x.status === "Offen")) protokoll("anwenden", `${r.id} noch offen: ${r.grund}`);
+  // Erledigte Automatik-Vormerkungen entfernen
+  for (const r of gut) {
+    if (r.id === "waechter" || r.id === "herunterfahren") assistentVorgemerkt.delete(r.id);
+    else if (r.id.startsWith("bereich:")) waechterVorgemerkt.delete(r.id.slice(8));
+  }
+  const AUTO_NAME = { waechter: "Wächter", herunterfahren: "Bereinigung beim Herunterfahren" };
+  const nameVon = id => AUTO_NAME[id] || (id.startsWith("bereich:") ? "Prüfbereich " + (((D.bereiche || []).find(b => b.name === id.slice(8)) || {}).anzeige || id.slice(8)) : null) || (PUNKTE.find(p => p.id === id) || {}).name || id;
+  const zeile = r => `<li><span class="mono">${esc(r.id in AUTO_NAME || r.id.startsWith("bereich:") ? "" : r.id)}</span><span>${esc(nameVon(r.id))}</span><span class="flags" ${r.ok ? "" : 'style="color:var(--rot)"'}>${esc(r.richtung === "aus" && r.ok && !(r.id in AUTO_NAME) && !r.id.startsWith("bereich:") ? STATUS_TEXT.Zurueckgesetzt
+        : r.ok && (r.id in AUTO_NAME || r.id.startsWith("bereich:")) ? (r.richtung === "ein" ? "eingeschaltet und nachgeprüft" : "ausgeschaltet und nachgeprüft") : (STATUS_TEXT[r.status] || r.status))}${(!r.ok || r.status === "Offen") && r.grund ? " – " + esc(r.grund) : ""}</span></li>`;
+  const sim = erg.simulation;
+  const vorg = (erg.vorgaenge || []).map(v => `${v.art.padEnd(16)} ${v.ziel}${v.wert ? "  =  " + v.wert : ""}`).join("\n");
+  // Stand danach (7.7): empfohlene Einstellungen mit dem Ergebnis dieses Laufs, ohne auf die Neumessung zu warten
+  const ergebnis = new Map(gut.filter(r => PUNKTE.some(p => p.id === r.id)).map(r => [r.id, r.richtung !== "aus"]));
+  const empfListe = PUNKTE.filter(p => bedienbar(p) && empfohlen(p));
+  const empfAn = empfListe.filter(p => ergebnis.has(p.id) ? ergebnis.get(p.id) : p.status === "Erfuellt").length;
+  const waechterHaelt = !sim && D.installiert && automatikIst("waechter");
+  // Erledigte Vormerkungen entfernen (fehlgeschlagene bleiben vorgemerkt)
+  for (const r of gut) vorgemerkt.delete(r.id);
+  zeigeDialog(`<h2>${sim ? "Simulation abgeschlossen" : schlecht.length ? "Angewendet – mit Hinweisen" : "Geschafft"}</h2>
+    <div class="abschluss"><div class="orca-gross klein">${orcaSvg()}</div>
+      <p>${sim ? "Es wurde <b>nichts</b> am System verändert. So wäre es gelaufen:" : "Jede Einstellung wurde gesetzt und danach nachgeprüft."}</p></div>
+    <div class="box"><b>${gut.length}</b> von ${punkte.length} ${sim ? "würden erfolgreich gesetzt" : "erfolgreich"}${schlecht.length ? ` · <b style="color:var(--rot)">${schlecht.length}</b> nicht` : ""}.
+      <br>${sim ? "Danach wären" : "Jetzt sind"} <b>${empfAn} von ${empfListe.length}</b> empfohlenen Einstellungen aktiv.${waechterHaelt ? " Der Wächter hält sie bei jeder Anmeldung." : ""}</div>
+    ${schlecht.length ? `<div class="vorschau-gruppe"><h3>Nicht gelungen · ${schlecht.length}</h3><ul>${schlecht.map(zeile).join("")}</ul></div>` : ""}
+    ${gut.length ? `<div class="vorschau-gruppe"><h3>${sim ? "Würde gelingen" : "Gelungen"} · ${gut.length}</h3><ul>${gut.map(zeile).join("")}</ul></div>` : ""}
+    ${sim && vorg ? `<div class="code-box"><div class="reiter"><button class="an">Was geschrieben worden wäre</button><button class="kopieren" data-a="kopieren">Kopieren</button></div><pre>${esc(vorg)}</pre></div>` : ""}
+    <div class="knoepfe"><button class="knopf voll" data-a="ok">Fertig</button></div>`,
+    a => { if (a === "kopieren") kopiere(vorg); neuMessen(); });
+  // Orca-Moment: großer Sprung, wenn alles geklappt hat
+  if (!schlecht.length) { const l = document.getElementById("logoOrca"); l.classList.remove("sprung", "hopser"); void l.offsetWidth; l.classList.add("sprung"); }
+}
+// --- Start ------------------------------------------------------------------
+function kopfDaten() {
+  if (!D) return;
+  document.getElementById("versionZeile").textContent = PRODUKT;
+  if (D.versionDatum) document.getElementById("versionZeile").dataset.tip = `${PRODUKT} vom ${D.versionDatum}`;
+  document.getElementById("gemessen").textContent = `gemessen ${D.gemessen}`;
+}
+// Messstatus oben rechts (während im Hintergrund neu gemessen wird)
+function messStatus(text) {
+  const g = document.getElementById("gemessen");
+  g.classList.toggle("misst", !!text);
+  if (text) g.textContent = text; else if (D) g.textContent = `gemessen ${D.gemessen}`;
+}
+// Im Programm: neu messen. Die zuletzt gemessenen Daten bleiben bis dahin sichtbar.
+async function neuMessen(vonHand = false) {
+  if (neuMessen.laeuft) return;
+  neuMessen.laeuft = true;
+  messStatus("misst …");
+  const t0 = Date.now(); protokoll("messung", "neu messen" + (vonHand ? " (von Hand)" : ""));
+  try {
+    const d = await bruecke("messen", {}, f => messStatus(`misst … ${f.prozent} %`));
+    datenUebernehmen(d);
+    protokoll("messung", `fertig in ${((Date.now() - t0) / 1000).toFixed(1)} s · ${PUNKTE.length} Punkte · ${PUNKTE.filter(p => p.status === "Erfuellt").length} erfüllt`);
+    kopfDaten(); aktualisiere();
+    if (vonHand) toast("Neu gemessen");
+  } catch (e) { protokoll("fehler", "Messung: " + e.message); toast("Messung fehlgeschlagen: " + e.message); }
+  finally { neuMessen.laeuft = false; messStatus(null); }
+}
+async function starteApp() {
+  bruecke("modus").then(m => {
+    SIMULATION = !!m.simulation;
+    if (!m.simulation) return;
+    document.getElementById("simHinweis").hidden = false;
+  }).catch(() => { });
+  // Bei jedem Start: Bestandsaufnahme mit Ergebnis je Bereich, mit „Weiter“ bestätigen.
+  // Die Messung beginnt sofort – beim ersten Start läuft währenddessen das Intro.
+  let anzeige = null, letzter = null;
+  const t0 = Date.now();
+  protokoll("start", `Oberfläche ${SEITEN_VERSION} · ${innerWidth}×${innerHeight} · ${navigator.language}`);
+  const ablage = Promise.all(Object.keys(ABLAGE).map(ablageLaden));
+  const messung = bruecke("messen", {}, f => { letzter = f; if (anzeige) anzeige.fortschritt(f.prozent, f.text); });
+  messung.then(() => protokoll("messung", `Bestandsaufnahme fertig in ${((Date.now() - t0) / 1000).toFixed(1)} s`),
+               e => protokoll("fehler", "Bestandsaufnahme: " + e.message));
+  if (!laden("orca-intro", false)) { await intro(); speichern("orca-intro", true); }
+  anzeige = bestandsaufnahmeStart();
+  if (letzter) anzeige.fortschritt(letzter.prozent, letzter.text);
+  try {
+    const d = await messung;
+    await ablage;
+    datenUebernehmen(d);
+    kopfDaten(); baueNav(); aktualisiereRing(); render();
+    anzeige.fertig();
+  } catch (e) { anzeige.fehler("Die Messung ist fehlgeschlagen: " + e.message); }
+}
+
+// --- Intro: was OrcaShield tut, in vier ruhigen Schritten ------------------------
+// Beim ersten Start; jederzeit überspringbar, auf „Über“ wieder aufrufbar.
+// Der kleine Orca schwimmt von Schritt zu Schritt ein Stück weiter.
+const INTRO = [
+  { titel: "Willkommen bei OrcaShield", text: "OrcaShield sorgt dafür, dass Windows so wenig wie möglich über dich weitergibt – Telemetrie, Werbung, KI-Funktionen, Standort und vieles mehr. Alles ist erklärt, nichts ist versteckt, und du entscheidest selbst.", klein: "OrcaShield sendet keine Daten. Kein Konto, keine Verbindung ins Internet." },
+  { titel: "Erst messen", text: "Bei jedem Start schaut OrcaShield nach, wie dein Windows gerade eingestellt ist – Bereich für Bereich. Dabei wird nichts verändert.", klein: "Die Bestandsaufnahme zeigt dir danach, wo du stehst." },
+  { titel: "Dann wählen", text: "Für jeden Bereich wählst du eine Schutzstufe – Basis, Erweitert oder Maximal – oder legst jede Einstellung einzeln fest. Die Farben zeigen die Stufe: grün Basis, gelb Erweitert, rot Maximal – je höher, desto mehr Einstellungen mit spürbarer Folge.", klein: "⚠ Sicherheitsrisiken gehören zu keiner Stufe und lassen sich nur einzeln und mit Warnung aktivieren." },
+  { titel: "Prüfen & anwenden", text: "Bevor etwas geändert wird, siehst du jede Änderung samt PowerShell-Befehl. Vorher sichert OrcaShield den Ausgangszustand – du kannst jederzeit zurück. Auf Wunsch hält der Wächter deine Einstellungen, wenn Windows sie verstellt.", klein: "Danach zeigt dir ein Abschluss, was gelungen ist – und was nicht, mit Grund." },
+];
+function intro() {
+  return new Promise(fertig => {
+    const o = document.getElementById("overlay");
+    let i = 0;
+    const zeige = () => {
+      const s = INTRO[i], letzter = i === INTRO.length - 1;
+      o.innerHTML = `<div class="intro">
+        <div class="intro-meer"><div class="intro-orca" style="left:${8 + i * 26}%">${orcaSvg()}</div></div>
+        <div class="intro-schritt"><span class="leise">${i + 1} von ${INTRO.length}</span><h2>${esc(s.titel)}</h2><p>${esc(s.text)}</p><p class="leise">${esc(s.klein)}</p></div>
+        <div class="intro-punkte">${INTRO.map((_, k) => `<i class="${k === i ? "an" : ""}"></i>`).join("")}</div>
+        <div class="intro-knoepfe"><button class="knopf still" id="introWeg">${letzter ? "" : "Überspringen"}</button>
+          <span style="flex:1"></span>${i ? '<button class="knopf still" id="introZurueck">Zurück</button>' : ""}
+          <button class="knopf voll" id="introWeiter">${letzter ? "Los geht’s" : "Weiter"}</button></div></div>`;
+      o.classList.add("auf");
+      const ende = () => { o.classList.remove("auf"); fertig(); };
+      document.getElementById("introWeiter").addEventListener("click", () => { if (letzter) ende(); else { i++; zeige(); } });
+      const z = document.getElementById("introZurueck"); if (z) z.addEventListener("click", () => { i--; zeige(); });
+      const w = document.getElementById("introWeg"); if (w && !letzter) w.addEventListener("click", ende); else if (w) w.style.visibility = "hidden";
+      document.getElementById("introWeiter").focus();
+    };
+    zeige();
+  });
+}
+
+wendeAn();
+if (APP) starteApp();
+else {
+  kopfDaten();
+  if (D) { baueNav(); aktualisiereRing(); }
+  const startSeite = D && ADRESSE.get("seite");
+  if (startSeite) ansicht = KAT[startSeite] ? { art: "kategorie", wert: startSeite } : { art: startSeite, wert: null };
+  render();
+  // Direktaufruf eines Abschnitts der Startseite (?seite=alle, ?seite=Telemetrie …): dorthin springen
+  if (D && startSeite && istEinseiter()) springe(ansicht.art);
+  if (D && !laden("orca-erststart", false) && !vorschauThema && !vorschauSprache) bestandsaufnahme();
+  // Prüfhilfe für die englische Fassung (nur Browser-Entwurf, ?sprache=en&pruefen=1):
+  // listet sichtbare Texte, die noch deutsch aussehen, am Ende der Seite auf.
+  if (vorschauSprache === "en" && ADRESSE.get("pruefen")) setTimeout(() => {
+    const rest = new Set(), w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const deutsch = /[äöüÄÖÜß]|\b(und|der|die|das|nicht|wird|werden|ist|mit|auf|für|bei|noch|keine?|alle|Einstellung\w*)\b/;
+    for (let n; (n = w.nextNode());) if (!n.parentElement.closest("pre, code, script, style") && deutsch.test(n.nodeValue)) rest.add(n.nodeValue.trim());
+    for (const el of document.querySelectorAll("[title], [data-tip], [placeholder]")) for (const a of ["title", "data-tip", "placeholder"]) if (el.getAttribute(a) && deutsch.test(el.getAttribute(a))) rest.add("@" + a + ": " + el.getAttribute(a));
+    const p = document.createElement("pre"); p.id = "fehltEn"; p.hidden = true; p.textContent = [...rest].join("\n"); document.body.appendChild(p);
+  }, 1500);
+}
+</script>
+</body>
+</html>
