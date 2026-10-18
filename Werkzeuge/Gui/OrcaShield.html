@@ -930,7 +930,7 @@ document.addEventListener("click", e => {
   if (el) protokoll("klick", beschreibe(el));
 }, true);
 let D = null;
-const SEITEN_VERSION = "1.1.0 Public Beta";
+const SEITEN_VERSION = "1.1.2 Public Beta";
 let PRODUKT = SEITEN_VERSION, PUNKTE = [], KATS = [], KAT = {};
 function datenUebernehmen(d) {
   D = d || null;
@@ -2728,7 +2728,9 @@ async function anwendenImProgramm() {
   };
   let erg = { simulation: SIMULATION, punkte: [], vorgaenge: [] };
   try {
-    const vorher = zustandJetzt();
+    const vorher = Object.fromEntries(PUNKTE.filter(bedienbar).map(p => [p.id, p.status === "Erfuellt"]));
+    erg = await bruecke("anwenden", mitAuto ? { ein, aus, automatik: auto } : { ein, aus }, fort);
+    if (!erg.abgelehnt && (erg.punkte || []).length) sicherungspunktErstellen(true, vorher);
     if (!erg.abgebrochen && erg.automatikAbgebrochen) erg.punkte = [...(erg.punkte || []), ...["waechter", "herunterfahren", "schattenkopien"].filter(n => assistentVorgemerkt.has(n)).concat([...waechterVorgemerkt.keys()].map(k => "bereich:" + k)).concat([...schritteVorgemerkt.keys()].map(k => "schritt:" + k))
       .map(id => ({ id, richtung: "", ok: false, status: "Fehler", grund: erg.automatikAbgebrochen }))];
   } catch (e) {

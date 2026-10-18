@@ -76,7 +76,6 @@ namespace OrcaShield
                 Font = new Font("Segoe UI Semibold", 10f), Margin = new Padding(10, 0, 0, 0), UseMnemonic = false,
                 FlatAppearance = { BorderColor = voll ? Akzent : Linie, BorderSize = 1 },
             };
-            // Bei Sicherheitsrisiken ist „Nein“ hervorgehoben und vorgewählt, sonst „Ja“ (E-040c)
             var ja = knopf(englisch ? "Yes" : "Ja", !risiko);
             var nein = knopf(englisch ? "No" : "Nein", risiko);
             ja.DialogResult = DialogResult.Yes; nein.DialogResult = DialogResult.No;

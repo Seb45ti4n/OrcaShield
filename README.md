@@ -2,7 +2,7 @@
 
 **Privacy hardening for Windows 11 – measured, verified, reversible.**
 
-[Deutsch](README.de.md) · Version **1.1.0 Public Beta** · Windows 11 (x64 and ARM64) · MIT License
+[Deutsch](README.de.md) · Version **1.1.2 Public Beta** · Windows 11 (x64 and ARM64) · MIT License
 
 OrcaShield turns off what Windows sends about you, keeps it turned off, cleans up traces at shutdown and protects you from the Microsoft device ID – with one rule above everything else: **measure first, then act, then verify.** Nothing is changed without your confirmation – once you switch on the watcher or the shutdown cleanup, they act on their own after every sign-in or shutdown. Every change can be undone, and OrcaShield itself sends nothing anywhere.
 
@@ -109,10 +109,10 @@ A hardening tool never loosens anything on its own.
 
 ## Installation
 
-1. Download `OrcaShield-Setup-1.1.0-Public-Beta.exe` from the **Releases** of this project. One file for normal PCs (x64) and ARM devices – the setup chooses.
+1. Download `OrcaShield-Setup-1.1.2-Public-Beta.exe` from the **Releases** of this project. One file for normal PCs (x64) and ARM devices – the setup chooses.
 2. Optional, recommended: compare the checksum with the one published in the release:
    ```powershell
-   Get-FileHash .\OrcaShield-Setup-1.1.0-Public-Beta.exe -Algorithm SHA256
+   Get-FileHash .\OrcaShield-Setup-1.1.2-Public-Beta.exe -Algorithm SHA256
    ```
 3. Start the setup and confirm the User Account Control prompt.
 4. Start OrcaShield from the Start menu. On start it measures the state of the PC (inventory) and changes **nothing**.

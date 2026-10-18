@@ -2,7 +2,7 @@
 
 **Datenschutz-Härtung für Windows 11 – gemessen, nachgeprüft, umkehrbar.**
 
-[English](README.md) · Version **1.1.0 Public Beta** · Windows 11 (x64 und ARM64) · MIT-Lizenz
+[English](README.md) · Version **1.1.2 Public Beta** · Windows 11 (x64 und ARM64) · MIT-Lizenz
 
 OrcaShield schaltet ab, was Windows über dich sendet, hält es abgeschaltet, beseitigt beim Herunterfahren Spuren und schützt vor der Microsoft-Gerätekennung – nach einer Regel über allem: **erst messen, dann handeln, dann nachprüfen.** Nichts wird ohne deine Bestätigung geändert – schaltest du den Wächter oder die Bereinigung ein, handeln sie danach bei jeder Anmeldung bzw. jedem Herunterfahren selbst. Jede Änderung lässt sich zurücknehmen, und OrcaShield selbst sendet nichts.
 
@@ -83,10 +83,10 @@ Deutsch und Englisch (unter „Anpassen“). Das Setup folgt der Sprache von Win
 
 ## Installation
 
-1. `OrcaShield-Setup-1.1.0-Public-Beta.exe` unter **Releases** dieses Projekts herunterladen. Eine Datei für normale PCs (x64) und ARM-Geräte – das Setup wählt selbst.
+1. `OrcaShield-Setup-1.1.2-Public-Beta.exe` unter **Releases** dieses Projekts herunterladen. Eine Datei für normale PCs (x64) und ARM-Geräte – das Setup wählt selbst.
 2. Empfohlen: Prüfsumme mit der im Release angegebenen vergleichen:
    ```powershell
-   Get-FileHash .\OrcaShield-Setup-1.1.0-Public-Beta.exe -Algorithm SHA256
+   Get-FileHash .\OrcaShield-Setup-1.1.2-Public-Beta.exe -Algorithm SHA256
    ```
 3. Setup starten, die Benutzerkontensteuerung mit Ja bestätigen.
 4. OrcaShield über das Startmenü starten. Beim Start misst es den Zustand des Rechners (Bestandsaufnahme) und ändert **nichts**.

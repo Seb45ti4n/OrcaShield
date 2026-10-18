@@ -1,5 +1,5 @@
 ﻿
-$Global:OrcaVersion = '1.1.0 Public Beta'
+$Global:OrcaVersion = '1.1.2 Public Beta'
 $Global:OrcaProdukt = $Global:OrcaVersion
 
 $Global:OrcaSkripte = Split-Path -Parent $PSCommandPath

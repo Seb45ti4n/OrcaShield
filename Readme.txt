@@ -1,7 +1,7 @@
 ﻿================================================================
   ORCASHIELD
   Datenschutz und Härtung für Windows 11
-  Version 1.1.0 Public Beta
+  Version 1.1.2 Public Beta
 ================================================================
 
   Nimm dir bitte ein paar Minuten für diesen Text. Datenschutz

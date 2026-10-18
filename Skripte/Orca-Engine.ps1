@@ -2179,8 +2179,10 @@ function Test-OrcaAutostartAus {
 $Global:OrcaDohVorlage = 'https://dns.quad9.net/dns-query'
 
 function Get-OrcaDnsAdapter {
+    $mitDns = @{}
+    foreach ($c in @(Get-DnsClient -ErrorAction SilentlyContinue)) { $mitDns[[int]$c.InterfaceIndex] = $true }
     return @(Get-NetAdapter -Physical -ErrorAction SilentlyContinue |
-             Where-Object { $_.InterfaceDescription -notmatch 'Bluetooth' } | Sort-Object Name)
+             Where-Object { $_.InterfaceDescription -notmatch 'Bluetooth' -and $mitDns.ContainsKey([int]$_.ifIndex) } | Sort-Object Name)
 }
 
 function Get-OrcaDnsStand {
