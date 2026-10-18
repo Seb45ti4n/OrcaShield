@@ -510,6 +510,12 @@ $Global:PsimAttrappenBlock = {
         if ($Global:PsimBereitstellungWeg -and $PackageName) { $Global:PsimBereitstellungWeg[$PackageName] = $true }
     }
 
+    function Global:Add-AppxPackage {
+        param([switch]$RegisterByFamilyName, [string]$MainPackage,
+              [Parameter(ValueFromRemainingArguments = $true)]$Rest)
+        Add-PsimVorgang -Art 'APP-REGISTRIEREN' -Ziel $MainPackage
+    }
+
     function Global:Get-AppxPackage {
         [CmdletBinding()]
         param([Parameter(Position = 0)][string]$Name, [switch]$AllUsers, [string]$User)

@@ -34,11 +34,17 @@ if ($script:orcaProfile.Count -eq 0) {
 #  HILFSFUNKTIONEN
 # --------------------------------------------------------------
 
-# Ein Schritt gilt nur dann als erledigt, wenn er das auch
-# belegen kann. Der Aktionsblock liefert dafür
-# @{ Weg = <int>; Rest = <int>; Text = <string> } zurück.
+function Test-OrcaSchrittAn {
+    param([Parameter(Mandatory)][string]$Name)
+    return ($Name -notin @($state.BereinigungAus))
+}
+
 function Invoke-OrcaSchritt {
-    param([string]$Name, [scriptblock]$Aktion)
+    param([string]$Name, [scriptblock]$Aktion, [string]$Schritt = '')
+    if ($Schritt -and -not (Test-OrcaSchrittAn $Schritt)) {
+        Write-OrcaLog -Level SKIP -Source 'SHUTDOWN' -Message "$Name - abgeschaltet"
+        return
+    }
     try {
         $r = & $Aktion
         if ($null -eq $r) { $r = @{ Weg = 0; Rest = 0; Text = '' } }
@@ -109,7 +115,7 @@ function Clear-OrcaProfilOrdner {
 #     Als SYSTEM leert Clear-RecycleBin nur den Papierkorb des
 #     Systemkontos. Deshalb über die Ablage je Benutzerkennung.
 # ==============================================================
-Invoke-OrcaSchritt -Name 'Papierkorb leeren' -Aktion {
+Invoke-OrcaSchritt -Schritt 'papierkorb' -Name 'Papierkorb leeren' -Aktion {
     $weg = 0; $rest = 0
     foreach ($lw in (Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue)) {
         $ablage = Join-Path $lw.Root '$Recycle.Bin'
@@ -143,7 +149,7 @@ if ($state.SchattenkopienLoeschen) {
 #  3. MINIATURANSICHT-ZWISCHENSPEICHER LEEREN
 #     Enthält Vorschaubilder auch von längst gelöschten Dateien.
 # ==============================================================
-Invoke-OrcaSchritt -Name 'Miniaturansicht-Zwischenspeicher leeren' -Aktion {
+Invoke-OrcaSchritt -Schritt 'miniaturansichten' -Name 'Miniaturansicht-Zwischenspeicher leeren' -Aktion {
     $rel = 'AppData\Local\Microsoft\Windows\Explorer'
     $a = Clear-OrcaProfilOrdner -Relativ $rel -Filter 'thumbcache_*.db'
     $b = Clear-OrcaProfilOrdner -Relativ $rel -Filter 'iconcache_*.db'
@@ -157,7 +163,7 @@ Invoke-OrcaSchritt -Name 'Miniaturansicht-Zwischenspeicher leeren' -Aktion {
 #     geöffnet und lässt sich häufig nicht löschen - das
 #     wird jetzt gemeldet statt verschwiegen.
 # ==============================================================
-Invoke-OrcaSchritt -Name 'Diagnoseprotokolle (ETLLogs) löschen' -Aktion {
+Invoke-OrcaSchritt -Schritt 'diagnose' -Name 'Diagnoseprotokolle (ETLLogs) löschen' -Aktion {
     $pfad = "$env:ProgramData\Microsoft\Diagnosis\ETLLogs"
     if (-not (Test-Path -LiteralPath $pfad)) { return @{ Weg = 0; Rest = 0; Text = 'nichts vorhanden' } }
     $dateien = Get-OrcaDateienSicher -Wurzel $pfad -Rekursiv
@@ -169,7 +175,7 @@ Invoke-OrcaSchritt -Name 'Diagnoseprotokolle (ETLLogs) löschen' -Aktion {
 # ==============================================================
 #  5. ZULETZT VERWENDETE DATEIEN UND SCHNELLZUGRIFF
 # ==============================================================
-Invoke-OrcaSchritt -Name 'Zuletzt verwendete Dateien löschen' -Aktion {
+Invoke-OrcaSchritt -Schritt 'zuletzt' -Name 'Zuletzt verwendete Dateien löschen' -Aktion {
     # Ausgenommen: die Datei, in der der Explorer die angehefteten
     # Ordner des Schnellzugriffs speichert. Verlorene Anheftungen
     # lassen sich nicht zurueckholen. Preis: Die Liste der zuletzt
@@ -185,7 +191,7 @@ Invoke-OrcaSchritt -Name 'Zuletzt verwendete Dateien löschen' -Aktion {
 #     Dass einzelne Dateien in Benutzung sind, ist normal -
 #     deshalb wird die Zahl genannt statt Erfolg behauptet.
 # ==============================================================
-Invoke-OrcaSchritt -Name 'Temporäre Dateien löschen' -Aktion {
+Invoke-OrcaSchritt -Schritt 'temp' -Name 'Temporäre Dateien löschen' -Aktion {
     $r = Clear-OrcaProfilOrdner -Relativ 'AppData\Local\Temp' -Rekursiv
     $weg = $r.Weg; $rest = $r.Rest; $bleibt = @($r.Bleibt)
 
@@ -205,7 +211,7 @@ Invoke-OrcaSchritt -Name 'Temporäre Dateien löschen' -Aktion {
 #     Absturzabbilder können Ausschnitte des Arbeitsspeichers
 #     und damit entschlüsselte Inhalte enthalten.
 # ==============================================================
-Invoke-OrcaSchritt -Name 'Absturzabbilder löschen' -Aktion {
+Invoke-OrcaSchritt -Schritt 'absturz' -Name 'Absturzabbilder löschen' -Aktion {
     # Je Ablage mit ihrer eigenen Wurzel: CrashDumps im Profil kann das Konto durch eine Verknüpfung ersetzen
     $weg = 0; $rest = 0
     $paare = @(@{ W = $env:SystemRoot; P = "$env:SystemRoot\MEMORY.DMP" }, @{ W = $env:SystemRoot; P = "$env:SystemRoot\Minidump" })
@@ -241,7 +247,7 @@ if ($state.RuhezustandDeaktivieren) {
 #     Laufwerk, kann dessen Pfad darin stehen. Programme starten
 #     danach beim ersten Mal minimal langsamer.
 # ==============================================================
-Invoke-OrcaSchritt -Name 'Prefetch-Dateien löschen' -Aktion {
+Invoke-OrcaSchritt -Schritt 'prefetch' -Name 'Prefetch-Dateien löschen' -Aktion {
     $pfad = "$env:SystemRoot\Prefetch"
     if (-not (Test-Path -LiteralPath $pfad)) { return @{ Weg = 0; Rest = 0; Text = 'nichts vorhanden' } }
     $dateien = Get-OrcaDateienSicher -Wurzel $pfad -Filter '*.pf'
@@ -317,7 +323,7 @@ function Invoke-OrcaHiveArbeit {
     }
 }
 
-Invoke-OrcaSchritt -Name 'Explorer-Verläufe und ShellBags löschen' -Aktion {
+Invoke-OrcaSchritt -Schritt 'explorer' -Name 'Explorer-Verläufe und ShellBags löschen' -Aktion {
     $weg = 0; $rest = 0
     foreach ($p in $script:orcaProfile) {
         # Geladene Profile stehen unter ihrer Kennung; ein selbst
@@ -339,7 +345,7 @@ Invoke-OrcaSchritt -Name 'Explorer-Verläufe und ShellBags löschen' -Aktion {
     return @{ Weg = $weg; Rest = $rest; Text = 'Registrierungszweige' }
 }
 
-Invoke-OrcaSchritt -Name 'Auslagerungsdatei beim Herunterfahren leeren' -Aktion {
+Invoke-OrcaSchritt -Schritt 'auslagerung' -Name 'Auslagerungsdatei beim Herunterfahren leeren' -Aktion {
     $mm = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management'
     if ([int](Get-OrcaRegWert -Pfad $mm -Name 'ClearPageFileAtShutdown') -eq 1) {
         return @{ Weg = 1; Rest = 0; Text = 'war bereits eingeschaltet' }   # belegt: Wert gelesen

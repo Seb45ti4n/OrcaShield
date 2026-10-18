@@ -149,6 +149,15 @@ button, input, select { font: inherit; color: inherit; }
 .nav-punkt .lbl { flex: 1; font-size: 13.8px; }
 .nav-punkt .zahl { font-size: 11.5px; color: var(--sehrleise); font-variant-numeric: tabular-nums; }
 .nav-punkt .zahl.offen::before { content: "● "; color: var(--gelb); font-size: 8px; vertical-align: 2px; }
+.nav-pfeil { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; margin: -3px -4px -3px 0; color: var(--sehrleise); transition: transform var(--dauer), color var(--dauer); }
+.nav-pfeil:hover { color: var(--text); background: var(--flaeche-2); }
+.nav-pfeil svg { width: 13px; height: 13px; }
+.nav-punkt.aufgeklappt .nav-pfeil { transform: rotate(90deg); }
+.nav-unter { display: none; margin: 2px 0 4px 14px; padding-left: 8px; border-left: 1px solid var(--linie); }
+.nav-unter.auf { display: block; }
+.nav-unter .nav-punkt { padding: 5px 10px; }
+.nav-unter .nav-punkt .lbl { font-size: 13px; }
+.nav-unter .nav-punkt .ico { width: 15px; height: 15px; }
 .nav-fuss { padding: 12px; border-top: 1px solid var(--linie); display: flex; flex-direction: column; gap: 10px; }
 .sendet-nichts { display: flex; gap: 8px; align-items: center; font-size: 11.5px; color: var(--sehrleise); cursor: pointer; border: 0; background: none; padding: 0 2px; text-align: left; }
 .sendet-nichts svg { width: 14px; height: 14px; color: var(--gruen); flex: none; }
@@ -173,6 +182,7 @@ button, input, select { font: inherit; color: inherit; }
 .klein-knopf { border: 1px solid var(--linie); background: var(--flaeche); border-radius: 9px; padding: 6px 11px; cursor: pointer; font-size: 12.5px; color: var(--leise); display: inline-flex; align-items: center; gap: 7px; transition: all var(--dauer); }
 .klein-knopf:hover { color: var(--text); border-color: var(--linie-2); }
 .klein-knopf svg { width: 14px; height: 14px; }
+.klein-knopf:disabled, .knopf:disabled { opacity: .4; cursor: default; pointer-events: none; }
 .verlauf-wrap { position: relative; }
 .verlauf-drop { position: absolute; top: calc(100% + 8px); left: 0; width: min(440px, 80vw); background: var(--flaeche-2); border: 1px solid var(--linie-2); border-radius: 12px; box-shadow: var(--schatten); display: none; z-index: 20; overflow: hidden; }
 .verlauf-drop.auf { display: block; }
@@ -180,6 +190,8 @@ button, input, select { font: inherit; color: inherit; }
 .verlauf-drop .liste { max-height: 320px; overflow: auto; }
 .v-zeile { display: grid; grid-template-columns: 74px 1fr; gap: 10px; padding: 8px 14px; font-size: 12.5px; border-bottom: 1px solid color-mix(in srgb, var(--linie) 60%, transparent); }
 .v-zeile:last-child { border-bottom: 0; }
+.v-zeile.klickbar { cursor: pointer; }
+.v-zeile.klickbar:hover { background: var(--flaeche-3); }
 .v-zeile time { color: var(--sehrleise); font-variant-numeric: tabular-nums; }
 .v-zeile .t { color: var(--leise); }
 .v-zeile .t b { color: var(--text); font-weight: 600; margin-right: 6px; }
@@ -207,7 +219,7 @@ button, input, select { font: inherit; color: inherit; }
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 170px), rgba(0, 0, 0, .55) 100%);
           mask-image: linear-gradient(to bottom, #000 calc(100% - 170px), rgba(0, 0, 0, .55) 100%); }
 :root[data-wellen="aus"] .inhalt { -webkit-mask-image: none; mask-image: none; }
-.breite { max-width: 1600px; }
+.breite { max-width: none; }
 
 /* --- Dashboard ------------------------------------------------------- */
 .hinweis-band { display: flex; gap: 12px; align-items: flex-start; padding: 13px 16px; border: 1px solid var(--linie); border-left: 3px solid var(--gelb); border-radius: 10px; background: var(--flaeche); margin-bottom: 26px; font-size: 13.5px; color: var(--leise); }
@@ -217,7 +229,7 @@ button, input, select { font: inherit; color: inherit; }
 .abschnitt .leise { font-size: 12.5px; }
 .legende { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--sehrleise); margin: -6px 0 18px; }
 .legende i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 0; }
-.dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(250px, calc((100% - (var(--spalten-kat, 4) - 1) * (var(--abstand) + 2px)) / var(--spalten-kat, 4))), 1fr)); gap: calc(var(--abstand) + 2px); }
+.dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--kachel-min-kat)), 1fr)); gap: calc(var(--abstand) + 2px); align-items: start; }
 .kachel-k { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 12px; transition: border-color var(--dauer); }
 .kachel-k:hover { border-color: var(--linie-2); }
 .kachel-k .oben { display: flex; align-items: center; gap: 10px; }
@@ -227,6 +239,9 @@ button, input, select { font: inherit; color: inherit; }
 .kachel-k p { margin: 0; font-size: 13px; color: var(--leise); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.9em; cursor: pointer; }
 .kachel-k.auf p { -webkit-line-clamp: unset; display: block; color: var(--text); }
 .kachel-k .oben { cursor: pointer; }
+.kachel-k .oben b.kat-titel { flex: 0 1 auto; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--leise) 55%, transparent); text-underline-offset: 3px; }
+.kachel-k .oben b.kat-titel:hover { color: var(--akzent); text-decoration-color: var(--akzent); }
+.kachel-k .oben .zahl { margin-left: auto; }
 @container (max-width: 220px) { .kachel-k { padding: 14px 13px 13px; gap: 10px; } .kachel-k .oben b { font-size: 13.5px; } }
 .balken { height: 3px; background: var(--flaeche-3); border-radius: 3px; overflow: hidden; }
 .balken i { display: block; height: 100%; background: var(--akzent); opacity: .8; border-radius: 3px; transition: width .4s; }
@@ -258,7 +273,7 @@ button, input, select { font: inherit; color: inherit; }
 .kat-kopf p { margin: 0; font-size: 13.5px; color: var(--leise); }
 
 /* --- Dashboard: alles Wichtige auf einen Blick, sehr kompakt ------------- */
-.db { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; max-width: 1280px; }
+.db { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; max-width: 2200px; }
 .db-k { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: 16px 18px; min-width: 0; }
 .db-k h3 { overflow-wrap: anywhere; margin: 0 0 10px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--sehrleise); font-weight: 600; }
 .db-zahlen { grid-column: span 7; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
@@ -301,9 +316,18 @@ button, input, select { font: inherit; color: inherit; }
 /* --- Karten der Einstellungen --------------------------------------- */
 /* Gewählte Spaltenzahl ist die Höchstzahl: Im schmalen Fenster werden es weniger, damit eine
    Karte nie schmaler als 230 px wird (sonst bricht der Titel nach jedem Wort um). */
-.raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(230px, calc((100% - (var(--spalten, 4) - 1) * var(--abstand)) / var(--spalten, 4))), 1fr)); gap: var(--abstand); }
-/* Die gewählte Spaltenzahl gilt immer (Wunsch: „die Anzahl wird erzwungen“).
-   Statt Spalten wegzunehmen, werden schmale Karten feiner gesetzt. */
+/* 1.1.0 (Ä10): Größe klein/mittel/groß statt fester Spaltenzahl – so viele Spalten, wie in die
+   Fensterbreite passen, im Vollbild also mehr. Karten richten sich oben aus, damit eine
+   aufgeklappte Karte ihre Nachbarn nicht mitstreckt (Ä9). */
+:root { --kachel-min: 290px; --kachel-min-kat: 300px; }
+:root[data-groesse="klein"] { --kachel-min: 225px; }
+:root[data-groesse="gross"] { --kachel-min: 390px; }
+:root[data-groesse-kat="klein"] { --kachel-min-kat: 240px; }
+:root[data-groesse-kat="gross"] { --kachel-min-kat: 400px; }
+.raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--kachel-min)), 1fr)); gap: var(--abstand); align-items: start; }
+/* Lange Texte laufen auch im Vollbild nicht über die ganze Breite */
+.karte-erkl, .karte .details { max-width: 92ch; }
+:root[data-ansicht="liste"] .karte { max-width: 1180px; }
 .karte { container-type: inline-size; }
 @container (max-width: 250px) {
   .karte-kopf { gap: 10px; }
@@ -325,6 +349,8 @@ button, input, select { font: inherit; color: inherit; }
 .gruppe-titel:first-child { margin-top: 0; }
 .gruppe-titel h2 { margin: 0; font: 600 15.5px var(--font-display); }
 .gruppe-titel span { color: var(--sehrleise); font-size: 12.5px; }
+.gruppe-titel .gruppe-klappen { margin-left: auto; align-self: center; padding: 4px 10px; font-size: 12px; }
+.gruppe-titel { scroll-margin-top: 14px; }
 .karte { --farbe: var(--linie-2); position: relative; background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius); padding: calc(var(--abstand) + 1px) calc(var(--abstand) + 2px) calc(var(--abstand) + 1px) calc(var(--abstand) + 6px);
   display: flex; flex-direction: column; gap: 9px; transition: border-color var(--dauer), box-shadow var(--dauer); animation: rein .3s both; }
 .karte::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: var(--farbe); opacity: .85; }
@@ -335,6 +361,26 @@ button, input, select { font: inherit; color: inherit; }
 .karte:hover { border-color: var(--linie-2); }
 .karte.geaendert { border-color: color-mix(in srgb, var(--akzent) 65%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--akzent) 12%, transparent); }
 .karte.nv { opacity: .55; }
+.nv-grund { margin: 0; font-size: 12.5px; color: var(--leise); }
+.nv-grund b { color: var(--text); font-weight: 600; }
+.mini-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; margin: 6px 0 14px; }
+.mini-karte { --farbe: var(--linie-2); position: relative; text-align: left; border: 1px solid var(--linie); border-radius: 10px; background: var(--flaeche); padding: 9px 11px 9px 14px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; color: var(--text); font-size: 13px; }
+.mini-karte::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--farbe); }
+.mini-karte:hover { border-color: var(--linie-2); }
+.mini-karte small { color: var(--sehrleise); font-size: 11.5px; }
+.mini-karte[data-e="Keiner"] { --farbe: var(--gruen); }
+.mini-karte[data-e="Leicht"] { --farbe: var(--gelb); }
+.mini-karte[data-e="Tief"] { --farbe: var(--rot); }
+.db-gross.klick { cursor: pointer; }
+.db-gross.klick:hover { border-color: var(--linie-2); }
+.dialog.breit { width: min(980px, 100%); }
+.seite.breit { max-width: 1280px; }
+.hosts-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 14px; }
+.hosts-eintrag { display: flex; gap: 9px; align-items: center; padding: 6px 10px; border: 1px solid var(--linie); border-radius: 9px; background: var(--flaeche); cursor: pointer; font-size: 12.5px; min-width: 0; }
+.hosts-eintrag span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hosts-eintrag input { accent-color: var(--akzent); flex: none; }
+.hosts-eintrag.geaendert { border-color: color-mix(in srgb, var(--akzent) 65%, transparent); }
+.hosts-eintrag:has(input:not(:checked)) span { color: var(--sehrleise); text-decoration: line-through; }
 .karte-kopf { display: flex; gap: 14px; align-items: flex-start; }
 .karte-text { flex: 1; min-width: 0; cursor: pointer; }
 .karte-text h3 { margin: 0; font-size: 14.5px; font-weight: 600; line-height: 1.4; }
@@ -432,6 +478,18 @@ input[type=range] { accent-color: var(--akzent); width: 100%; }
 .mess-fortschritt { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .mess-fortschritt .balken { width: min(420px, 100%); height: 4px; }
 .mess-fortschritt .balken i { transition: width .35s ease-out; }
+.mess-fortschritt .balken { overflow: visible; margin-right: 30px; }
+.mess-fortschritt .balken i { position: relative; opacity: 1; }
+.balken-orca { position: absolute; right: -31px; top: 50%; width: 30px; height: 16px; translate: 0 -55%; animation: balkenOrca 1.4s ease-in-out infinite; }
+.balken-orca svg { display: block; width: 100%; height: 100%; }
+@keyframes balkenOrca { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-2px) rotate(-3deg); } }
+:root[data-bewegung="aus"] .balken-orca { animation: none; }
+.logo-schwebe { position: fixed; z-index: 40; pointer-events: none; }
+.logo-schwebe svg { width: 100%; height: 100%; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--akzent) 55%, transparent)); }
+.orca-schwimmt { position: fixed; z-index: 60; left: 0; top: 38%; width: 230px; height: 122px; pointer-events: none; animation: orcaQuer 4.2s cubic-bezier(.45, .05, .55, .95) 1 forwards; }
+.orca-schwimmt svg { width: 100%; height: 100%; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--akzent) 45%, transparent)); animation: orcaWelle 1.05s ease-in-out infinite; }
+@keyframes orcaQuer { from { transform: translateX(-260px); } to { transform: translateX(calc(100vw + 40px)); } }
+@keyframes orcaWelle { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-14px) rotate(-4deg); } }
 .mess-fortschritt span { font-size: 12.5px; color: var(--sehrleise); font-variant-numeric: tabular-nums; }
 .fehlertext { color: var(--rot) !important; }
 .abschluss { display: flex; gap: 16px; align-items: center; }
@@ -459,6 +517,16 @@ input[type=range] { accent-color: var(--akzent); width: 100%; }
 .muell { border: 1px solid color-mix(in srgb, var(--rot) 40%, transparent); background: transparent; color: var(--rot); border-radius: 9px; width: 34px; height: 32px; display: grid; place-items: center; cursor: pointer; transition: background var(--dauer); }
 .muell:hover { background: color-mix(in srgb, var(--rot) 14%, transparent); }
 .muell svg { width: 16px; height: 16px; }
+.liste-k.schritte .zeile-k .folge { margin-top: 4px; font-size: 12.5px; color: var(--gelb); }
+.liste-k.schritte .zeile-k .folge b { font-weight: 600; }
+.liste-k.schritte .zeile-k .folge.rot { color: var(--rot); }
+.liste-k.schritte.gedimmt { opacity: .6; }
+.zeile-k.vorgemerkt-zeile { border-color: color-mix(in srgb, var(--akzent) 65%, transparent); }
+.muell.umbenennen { border-color: var(--linie-2); color: var(--leise); }
+.muell.umbenennen:hover { background: var(--flaeche-3); color: var(--text); }
+.zeile-k.fest { border-style: dashed; }
+.zeile-k.neu { animation: neuLeuchten 2.4s ease-out 1; }
+@keyframes neuLeuchten { 0%, 30% { border-color: var(--akzent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--akzent) 22%, transparent); } 100% { box-shadow: none; } }
 .link-knopf { border: 0; background: none; padding: 0; color: var(--akzent); cursor: pointer; font: inherit; text-decoration: underline; text-underline-offset: 3px; }
 /* Über-Seite: ein Orca im Hintergrund, der fröhlich Wasser durch sein Blasloch bläst */
 .seite { position: relative; }
@@ -558,8 +626,7 @@ input[type=range] { accent-color: var(--akzent); width: 100%; }
     </div>
     <div class="nav-scroll">
       <div id="navOben"></div>
-      <h4 data-t="bereiche">Bereiche</h4>
-      <div id="navKategorien"></div>
+      <div id="navKategorien" class="nav-unter"></div>
       <h4 data-t="mehr">Mehr</h4>
       <div id="navMehr"></div>
     </div>
@@ -578,6 +645,7 @@ input[type=range] { accent-color: var(--akzent); width: 100%; }
   <main class="haupt">
     <header class="kopf">
       <div class="kopf-oben">
+        <button class="klein-knopf" id="btnZurueck" disabled data-tip-unten data-tip="Zurück zur vorherigen Ansicht (auch Maustaste „Zurück“ oder Alt + ←)" aria-label="Zurück"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
         <div class="verlauf-wrap">
           <button class="klein-knopf" id="btnVerlauf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg><span data-t="verlauf">Verlauf</span> ▾</button>
           <div class="verlauf-drop" id="verlaufDrop">
@@ -619,8 +687,8 @@ input[type=range] { accent-color: var(--akzent); width: 100%; }
   <div class="feld"><label data-t="erscheinung">Erscheinungsbild</label><div class="segment" data-opt="theme"><button data-v="dark" data-t="dunkel">Dunkel</button><button data-v="light" data-t="hell">Hell</button><button data-v="system" data-t="system">System</button></div></div>
   <div class="feld"><label data-t="akzent">Akzentfarbe</label><div class="farben" id="farben"></div></div>
   <div class="feld"><label data-t="dichte">Dichte</label><div class="segment" data-opt="dichte"><button data-v="kompakt" data-t="kompakt">Kompakt</button><button data-v="normal" data-t="normal">Normal</button><button data-v="luftig" data-t="luftig">Luftig</button></div></div>
-  <div class="feld"><label data-t="spaltenKat">Spalten – Kategorien</label><div class="segment" data-opt="spaltenKat"><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div></div>
-  <div class="feld"><label data-t="spaltenEin">Spalten – Einstellungen</label><div class="segment" data-opt="spalten"><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div></div>
+  <div class="feld"><label data-t="groesseKat">Größe – Kategorien</label><div class="segment" data-opt="groesseKat"><button data-v="klein" data-t="klein">Klein</button><button data-v="mittel" data-t="mittel">Mittel</button><button data-v="gross" data-t="gross">Groß</button></div></div>
+  <div class="feld"><label data-t="groesseEin">Größe – Einstellungen</label><div class="segment" data-opt="groesse"><button data-v="klein" data-t="klein">Klein</button><button data-v="mittel" data-t="mittel">Mittel</button><button data-v="gross" data-t="gross">Groß</button></div></div>
   <div class="feld"><label data-t="ansicht">Ansicht</label><div class="segment" data-opt="ansicht"><button data-v="raster" data-t="kacheln">Kacheln</button><button data-v="liste" data-t="liste">Liste</button></div></div>
   <div class="feld"><label data-t="ecken">Ecken</label><div class="segment" data-opt="ecken"><button data-v="eckig" data-t="eckig">Eckig</button><button data-v="normal" data-t="weich">Weich</button><button data-v="rund" data-t="rund">Rund</button></div></div>
   <div class="feld"><label><span data-t="schriftgroesse">Schriftgröße</span> <span id="schriftWert"></span></label><input type="range" id="schrift" min="13" max="19" step="1"></div>
@@ -653,6 +721,7 @@ const T = {
     ausblenden: "Ausblenden", bewegung: "Bewegung", an: "An", aus: "Aus", wellen: "Wellen im Hintergrund", vorgabe: "Auf Vorgabe zurücksetzen",
     speicherHinweis: "Wird nur in diesem Browser gespeichert.", uebersicht: "Kategorien", suchen: "Suchen …",
     dashboard: "Dashboard", bereiche: "Bereiche", spaltenKat: "Spalten – Kategorien", spaltenEin: "Spalten – Einstellungen",
+    groesseKat: "Größe – Kategorien", groesseEin: "Größe – Einstellungen", klein: "Klein", mittel: "Mittel", gross: "Groß",
     gruen: "Basis", gelb: "Erweitert", rot: "Maximal", individuell: "Individuell", spalten: "Spalten" },
   en: { kategorien: "Categories", mehr: "More", sendetNichts: "OrcaShield sends no data.", anpassen: "Customize",
     verlauf: "History", letzteEreignisse: "Recent events", standPruefen: "Refresh", vorgemerkt: "pending changes", verwerfen: "Discard",
@@ -662,6 +731,7 @@ const T = {
     ausblenden: "Hide", bewegung: "Motion", an: "On", aus: "Off", wellen: "Background waves", vorgabe: "Reset to defaults",
     speicherHinweis: "Stored in this browser only.", uebersicht: "Categories", suchen: "Search …",
     dashboard: "Dashboard", bereiche: "Areas", spaltenKat: "Columns – categories", spaltenEin: "Columns – settings",
+    groesseKat: "Size – categories", groesseEin: "Size – settings", klein: "Small", mittel: "Medium", gross: "Large",
     gruen: "Basic", gelb: "Extended", rot: "Maximum", individuell: "Custom", spalten: "Columns" },
 };
 let SP = "de";
@@ -860,7 +930,7 @@ document.addEventListener("click", e => {
   if (el) protokoll("klick", beschreibe(el));
 }, true);
 let D = null;
-const SEITEN_VERSION = "1.0.1 Public Beta";
+const SEITEN_VERSION = "1.1.0 Public Beta";
 let PRODUKT = SEITEN_VERSION, PUNKTE = [], KATS = [], KAT = {};
 function datenUebernehmen(d) {
   D = d || null;
@@ -873,6 +943,7 @@ datenUebernehmen(APP ? null : (window.ORCA_DATEN || null));
 const vorgemerkt = new Map();            // id -> true (einschalten) / false (zurücknehmen)
 const waechterVorgemerkt = new Map();    // bereich -> true / false
 const assistentVorgemerkt = new Map();   // "waechter" | "herunterfahren" -> true / false
+const schritteVorgemerkt = new Map();    // Schritt der Bereinigung -> true / false (1.1.0, Ä21)
 let ansicht = { art: "dashboard", wert: null };
 let filter = "alle";
 let suchtext = "";
@@ -909,6 +980,7 @@ const ICO = {
   verlaufI: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
   apps: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17.5h7"/>',
   kennung: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2.5"/><path d="M14 10h4M14 14h4"/>',
+  hosts: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/>',
 };
 const svg = (n, cls = "ico") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICO[n] || ICO.alle}</svg>`;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -963,16 +1035,37 @@ function merke(p, ziel) {
     protokoll("vormerken", `${p.id} → ${vorgemerkt.has(p.id) ? (ziel ? "aktivieren" : "zurücksetzen") : "Vormerkung aufgehoben"} (Status ${p.status})`);
   }
 }
-// Bei jeder Änderung macht der Orca im Logo einen kleinen Hüpfer mit Fontäne.
-// Viele Änderungen auf einmal (eine ganze Stufe) ergeben einen einzigen Hüpfer.
 function orcaMoment() {
   clearTimeout(orcaMoment.t);
-  orcaMoment.t = setTimeout(() => {
-    const l = document.getElementById("logoOrca");
-    if (!l || l.classList.contains("sprung")) return;
-    l.classList.remove("hopser"); void l.offsetWidth; l.classList.add("hopser");
-    setTimeout(() => l.classList.remove("hopser"), 1400);
-  }, 30);
+  orcaMoment.t = setTimeout(() => logoBewegung("hopser", 1400), 30);
+}
+function logoBewegung(art, dauer) {
+  const l = document.getElementById("logoOrca");
+  if (!l || (art === "hopser" && l.classList.contains("sprung"))) return;
+  const ziele = [l];
+  // Bei offenem Dialog liegt das Milchglas über dem Logo: eine Kopie darüber legen
+  if (document.getElementById("schleier").classList.contains("auf")) {
+    let s = document.getElementById("logoSchwebe");
+    if (!s) { s = document.createElement("div"); s.id = "logoSchwebe"; s.className = "orca logo-schwebe"; s.innerHTML = l.innerHTML; document.body.appendChild(s); }
+    const r = l.getBoundingClientRect();
+    Object.assign(s.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", display: "" });
+    ziele.push(s);
+    clearTimeout(logoBewegung.weg); logoBewegung.weg = setTimeout(() => { s.style.display = "none"; }, dauer);
+  }
+  for (const z of ziele) { z.classList.remove("hopser", "sprung"); void z.offsetWidth; z.classList.add(art); }
+  setTimeout(() => ziele.forEach(z => z.classList.remove(art)), dauer);
+}
+// Ä1/Ä12c: Ein Orca schwimmt einmal von links nach rechts durch. Im Programm über den ganzen
+// Bildschirm (eigenes durchsichtiges Fenster, Aktion „orca“), im Browser-Entwurf durch das Fenster.
+function orcaSchwimmt() {
+  if (opt.bewegung === "aus") return;
+  const imFenster = () => {
+    const o = document.createElement("div");
+    o.className = "orca-schwimmt"; o.innerHTML = orcaSvg();
+    document.body.appendChild(o);
+    setTimeout(() => o.remove(), 4400);
+  };
+  if (APP) bruecke("orca", {}).catch(imFenster); else imFenster();
 }
 function stufenText(kat, s) {
   const l = PUNKTE.filter(p => p.kategorie === kat && bedienbar(p) && !p.senktSchutz);
@@ -1085,21 +1178,32 @@ function ablageLaden(key) {
 function navKnopf(art, wert, ico, text, zusatz = "") {
   return `<button class="nav-punkt" data-art="${art}" ${wert ? `data-wert="${esc(wert)}"` : ""}>${svg(ico)}<span class="lbl">${esc(text)}</span>${zusatz}</button>`;
 }
+const PFEIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
+let navKatAuf = (() => { try { return localStorage.getItem("orca-nav-kat") === "auf"; } catch { return false; } })();
 function baueNav() {
   if (!D) return;   // vor der ersten Messung: Seitenleiste bleibt leer
   document.getElementById("navOben").innerHTML =
     navKnopf("dashboard", null, "dashboard", t("dashboard")) +
     navKnopf("uebersicht", null, "start", t("uebersicht")) +
-    navKnopf("alle", null, "alle", "Alle Einstellungen", `<span class="zahl">${PUNKTE.length}</span>`);
+    navKnopf("alle", null, "alle", "Alle Einstellungen", `<span class="zahl">${PUNKTE.length}</span><span class="nav-pfeil" id="navPfeil" role="button" aria-label="Kategorien ein- oder ausklappen">${PFEIL}</span>`);
   document.getElementById("navKategorien").innerHTML = KATS.filter(k => k.name !== "Experimentell").map(k => {
     const l = PUNKTE.filter(p => p.kategorie === k.name);
     const offen = l.filter(p => bedienbar(p) && !istAn(p) && empfohlen(p)).length;
-    return navKnopf("kategorie", k.name, k.name, k.anzeige, `<span class="zahl ${offen ? "offen" : ""}">${l.length}</span>`);
+    return navKnopf("gruppe", k.name, k.name, k.anzeige, `<span class="zahl ${offen ? "offen" : ""}">${l.length}</span>`);
   }).join("");
+  const setzeKatAuf = auf => {
+    navKatAuf = auf;
+    try { localStorage.setItem("orca-nav-kat", auf ? "auf" : "zu"); } catch { }
+    document.getElementById("navKategorien").classList.toggle("auf", auf);
+    document.querySelector('#navOben .nav-punkt[data-art="alle"]').classList.toggle("aufgeklappt", auf);
+  };
+  setzeKatAuf(navKatAuf);
+  document.getElementById("navPfeil").addEventListener("click", e => { e.stopPropagation(); setzeKatAuf(!navKatAuf); protokoll("nav", "Kategorien " + (navKatAuf ? "aufgeklappt" : "eingeklappt")); });
   document.getElementById("navMehr").innerHTML =
     navKnopf("waechter", null, "waechter", "Überwachung & Automatik") +
     navKnopf("apps", null, "apps", "Apps", `<span class="zahl">${((D.apps || {}).liste || []).filter(x => x.installiert).length}</span>`) +
-    navKnopf("kennung", null, "kennung", "Gerätekennung", (D.geraetekennung || {}).echt ? '<span class="zahl offen">1</span>' : "") +
+    navKnopf("kennung", null, "kennung", "Gerätekennung (GDID)", (D.geraetekennung || {}).echt ? '<span class="zahl offen">1</span>' : "") +
+    navKnopf("hosts", null, "hosts", "Hosts", `<span class="zahl">${(((D.hosts || {}).abschnitte) || []).reduce((s, a) => s + a.eintraege.length, 0) || "–"}</span>`) +
     navKnopf("schnapp", null, "schnapp", "Wiederherstellung") +
     navKnopf("profile", null, "profile", "Profile") +
     navKnopf("verlauf", null, "verlaufI", "Verlauf") +
@@ -1110,6 +1214,9 @@ function baueNav() {
 }
 function gehe(art, wert = null) {
   protokoll("seite", art + (wert ? ":" + wert : ""));
+  merkeZurueck();
+  if (art === "kategorie" && wert !== "Experimentell") art = "gruppe";
+  if (art === "gruppe") return springeZuGruppe(wert);
   // Dashboard, Kategorien und Alle Einstellungen liegen zusammen auf der Startseite.
   if (EINSEITER.includes(art)) return springe(art);
   ansicht = { art, wert };
@@ -1117,6 +1224,35 @@ function gehe(art, wert = null) {
   render();
   document.getElementById("inhalt").scrollTop = 0;
 }
+const ZURUECK = [];
+function merkeZurueck() {
+  if (merkeZurueck.aus || !D) return;
+  const s = { ansicht: { ...ansicht }, scroll: Math.round(document.getElementById("inhalt").scrollTop) };
+  const l = ZURUECK[ZURUECK.length - 1];
+  if (l && l.ansicht.art === s.ansicht.art && l.ansicht.wert === s.ansicht.wert && Math.abs(l.scroll - s.scroll) < 40) return;
+  ZURUECK.push(s);
+  if (ZURUECK.length > 60) ZURUECK.shift();
+  zeigeZurueck();
+}
+function zeigeZurueck() { const b = document.getElementById("btnZurueck"); if (b) b.disabled = !ZURUECK.length; }
+function zurueck() {
+  if (document.getElementById("schleier").classList.contains("auf")) { if (zeigeDialog.zu) zeigeDialog.zu(); return; }
+  const s = ZURUECK.pop();
+  zeigeZurueck();
+  if (!s) return;
+  protokoll("seite", "zurück zu " + s.ansicht.art + (s.ansicht.wert ? ":" + s.ansicht.wert : ""));
+  const inhalt = document.getElementById("inhalt");
+  const warEinseiter = istEinseiter();
+  ansicht = s.ansicht;
+  if (!(warEinseiter && istEinseiter())) render();
+  inhalt.scrollTo({ top: s.scroll, behavior: "auto" });
+  setTimeout(folgeScroll, 0);
+}
+// Maustaste 4 („Zurück“) und Alt+Pfeil links
+window.addEventListener("mousedown", e => { if (e.button === 3 || e.button === 4) e.preventDefault(); });
+window.addEventListener("mouseup", e => { if (e.button === 3) { e.preventDefault(); zurueck(); } });
+window.addEventListener("keydown", e => { if (e.altKey && e.key === "ArrowLeft") { e.preventDefault(); zurueck(); } });
+
 function markiereNav(art = ansicht.art, wert = ansicht.wert) {
   document.querySelectorAll(".nav-punkt").forEach(b => b.classList.toggle("an", b.dataset.art === art && (b.dataset.wert || null) === wert));
 }
@@ -1141,7 +1277,7 @@ function render() {
   document.getElementById("inhalt").onscroll = null;
   if (istEinseiter()) return renderEinseiter();
   const seiten = { kategorie: () => renderListe(ansicht.wert),
-    waechter: renderWaechter, apps: renderApps, kennung: renderKennung, schnapp: renderSchnapp, profile: renderProfile, verlauf: renderVerlauf, bekannt: renderBekannt, ueber: renderUeber };
+    waechter: renderWaechter, apps: renderApps, kennung: renderKennung, hosts: renderHosts, schnapp: renderSchnapp, profile: renderProfile, verlauf: renderVerlauf, bekannt: renderBekannt, ueber: renderUeber };
   (seiten[ansicht.art] || renderEinseiter)();
 }
 
@@ -1155,7 +1291,7 @@ const istEinseiter = () => EINSEITER.includes(ansicht.art);
 const ABSCHNITT_KOPF = {
   dashboard: () => [t("dashboard"), D.system || ""],
   uebersicht: () => [t("uebersicht"), `Schutzstufen für ${KATS.filter(k => k.name !== "Experimentell").length} Bereiche`],
-  alle: () => ["Alle Einstellungen", `${PUNKTE.length} Einstellungen · ${PUNKTE.filter(p => bedienbar(p) && istAn(p)).length} von ${PUNKTE.filter(bedienbar).length} aktiv`],
+  alle: () => ["Alle Einstellungen", `${PUNKTE.length} Einstellungen = ${PUNKTE.filter(p => ["Light", "Standard", "Maximum"].includes(p.stufe)).length} in den Stufen + ${PUNKTE.filter(p => p.stufe === "Zusatz").length} Zusatz + ${PUNKTE.filter(p => p.stufe === "Experimentell").length} Experimentell · ${PUNKTE.filter(p => bedienbar(p) && istAn(p)).length} von ${PUNKTE.filter(bedienbar).length} verfügbaren aktiv`],
 };
 
 function renderEinseiter() {
@@ -1169,8 +1305,13 @@ function renderEinseiter() {
   verbindeDashboard();
   document.querySelectorAll("#abs-uebersicht .kachel-k").forEach(k => {
     verbindeStufen(k, k.dataset.kat, true);
-    // Klick auf die Kachel (nicht auf die Stufenknöpfe) öffnet die Seite des Bereichs mit Erklärung
-    k.addEventListener("click", e => { if (!e.target.closest(".stufen")) gehe("kategorie", k.dataset.kat); });
+    k.addEventListener("click", e => {
+      if (e.target.closest(".stufen")) return;
+      if (e.target.closest(".kat-titel")) { gehe("gruppe", k.dataset.kat); return; }
+      k.classList.toggle("auf");
+      if (k.classList.contains("auf")) offeneKacheln.add(k.dataset.kat); else offeneKacheln.delete(k.dataset.kat);
+      protokoll("kachel", `${k.dataset.kat} ${k.classList.contains("auf") ? "aufgeklappt" : "zugeklappt"}`);
+    });
   });
   renderAlleInhalt();
   const inhalt = document.getElementById("inhalt");
@@ -1181,7 +1322,9 @@ function renderEinseiter() {
 // Nur die Karten neu zeichnen (Filter, Suche) – der Rest der Seite bleibt stehen.
 function renderAlleInhalt() {
   baueFilter(PUNKTE, "filterInline", () => { renderAlleInhalt(); });
-  document.getElementById("alleInhalt").innerHTML = `<div class="raster">${kartenHtml(PUNKTE.filter(passt), true)}</div>`;
+  const rang = new Map(KATS.map((k, i) => [k.name, i]));
+  const liste = PUNKTE.map((p, i) => [p, i]).sort((a, b) => (rang.get(a[0].kategorie) ?? 999) - (rang.get(b[0].kategorie) ?? 999) || a[1] - b[1]).map(x => x[0]);
+  document.getElementById("alleInhalt").innerHTML = `<div class="raster">${kartenHtml(liste.filter(passt), true)}</div>`;
   verbindeKarten();
 }
 
@@ -1193,13 +1336,32 @@ function folgeScroll() {
   let abschnitt = "dashboard";
   document.querySelectorAll("#seite [data-abschnitt]").forEach(s => { if (s.getBoundingClientRect().top <= oben) abschnitt = s.dataset.abschnitt; });
   if (abschnitt !== folgeScroll.letzter) { protokoll("scroll", "Abschnitt " + abschnitt); folgeScroll.letzter = abschnitt; }
-  markiereNav(abschnitt, null);
+  // In „Alle Einstellungen“ markiert die Seitenleiste den Bereich, durch den man gerade scrollt (Ä11)
+  let gruppe = null;
+  if (abschnitt === "alle") document.querySelectorAll("#alleInhalt .gruppe-titel[data-gruppe]").forEach(g => { if (g.getBoundingClientRect().top <= oben) gruppe = g.dataset.gruppe; });
+  if (gruppe) markiereNav("gruppe", gruppe); else markiereNav(abschnitt, null);
   const [titel, unter] = ABSCHNITT_KOPF[abschnitt]();
   setzeKopf(titel, unter, false);
 }
 
+// Zu einem Bereich in „Alle Einstellungen“ springen (Ä8, Ä11). Blendet ein Filter oder die
+// Suche den Bereich aus, wird der Filter zurückgesetzt – sonst gäbe es nichts zum Hinspringen.
+function springeZuGruppe(kat) {
+  const war = istEinseiter();
+  ansicht = { art: "alle", wert: null };
+  if (!war) render();
+  let ziel = document.getElementById("grp-" + kat);
+  if (!ziel) { filter = "alle"; suchtext = ""; const s = document.getElementById("suche"); if (s) s.value = ""; renderAlleInhalt(); ziel = document.getElementById("grp-" + kat); }
+  const inhalt = document.getElementById("inhalt");
+  if (!ziel) return;
+  const y = ziel.getBoundingClientRect().top - inhalt.getBoundingClientRect().top + inhalt.scrollTop - 14;
+  inhalt.scrollTo({ top: Math.max(0, y), behavior: war && opt.bewegung !== "aus" ? "smooth" : "auto" });
+  setTimeout(folgeScroll, war ? 450 : 0);
+}
+
 // Zu einem der drei Abschnitte springen (zeigt die Startseite, falls nötig).
 function springe(art) {
+  merkeZurueck();
   const war = istEinseiter();
   ansicht = { art, wert: null };
   if (!war) render();
@@ -1216,7 +1378,7 @@ function kategorienHtml() {
   if (zurueck.length) {
     html += `<div class="hinweis-band"><div><b>Letzte Prüfung:</b> ${zurueck.length} ${zurueck.length === 1 ? "Einstellung wurde" : "Einstellungen wurden"} wiederhergestellt (${esc(zurueck.join(", "))}). Windows oder ein Programm hatte sie geändert.</div></div>`;
   }
-  html += `<div class="abschnitt"><h2>${t("uebersicht")}</h2><span class="leise">Schutzstufe je Bereich wählen – Klick auf eine Kachel zeigt ihre Einstellungen</span></div>
+  html += `<div class="abschnitt"><h2>${t("uebersicht")}</h2><span class="leise">Schutzstufe je Bereich wählen – Klick auf den Namen zeigt die Einstellungen</span></div>
     <div class="legende"><span data-tip="${STUFE_TIPP.gruen}"><i style="background:var(--gruen)"></i>Basis</span><span data-tip="${STUFE_TIPP.gelb}"><i style="background:var(--gelb)"></i>Erweitert</span><span data-tip="${STUFE_TIPP.rot}"><i style="background:var(--rot)"></i>Maximal</span><button class="sicherheit" data-sicherheit data-tip="Einstellungen, die den Schutz des Systems verringern. Nicht Teil der Schutzstufen, nur einzeln aktivierbar.">⚠ Sicherheitsrisiko</button></div>
     <div class="dash">`;
   for (const k of KATS) {
@@ -1224,8 +1386,8 @@ function kategorienHtml() {
     const l = PUNKTE.filter(p => p.kategorie === k.name && bedienbar(p));
     const an = l.filter(istAn).length;
     const st = stufeDerKategorie(k.name);
-    html += `<div class="kachel-k" data-kat="${esc(k.name)}">
-      <div class="oben">${svg(k.name)}<b>${esc(k.anzeige)}</b><span class="zahl">${an}/${l.length}</span></div>
+    html += `<div class="kachel-k ${offeneKacheln.has(k.name) ? "auf" : ""}" data-kat="${esc(k.name)}">
+      <div class="oben">${svg(k.name)}<b class="kat-titel" data-tip="Zu den Einstellungen dieses Bereichs">${esc(k.anzeige)}</b><span class="zahl">${an}/${l.length}</span></div>
       <p>${esc(k.erklaerung)}</p>
       <div class="balken"><i style="width:${l.length ? Math.round(an / l.length * 100) : 0}%"></i></div>
       ${stufenKnoepfe(st)}
@@ -1239,7 +1401,7 @@ function kategorienHtml() {
 function dashboardHtml() {
   const empf = PUNKTE.filter(p => bedienbar(p) && empfohlen(p));
   const an = empf.filter(istAn).length, pr = empf.length ? Math.round(an / empf.length * 100) : 0;
-  const offen = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size;
+  const offen = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size + schritteVorgemerkt.size;
   const nv = PUNKTE.filter(p => !bedienbar(p)).length;
   const risiko = PUNKTE.filter(p => p.senktSchutz && bedienbar(p) && istAn(p)).length;
   const zusatz = PUNKTE.filter(p => p.stufe === "Zusatz" && bedienbar(p) && istAn(p)).length;
@@ -1257,7 +1419,7 @@ function dashboardHtml() {
   const dienstText = (zuletzt, an) => zuletzt ? "zuletzt " + esc(zuletzt) : !eingerichtet ? "noch nicht eingerichtet" : an ? "eingeschaltet" : "ausgeschaltet";
   const v = (D.verlauf || []).slice(-5).reverse();
   return `<div class="db">
-    <div class="db-k db-gross"><div class="ring" style="--p:${pr}"><span>${pr}%</span><div class="spitze"></div></div>
+    <div class="db-k db-gross klick" id="dbGross" data-tip="Zeigt, welche empfohlenen Einstellungen aktiv sind und welche nicht"><div class="ring" style="--p:${pr}"><span>${pr}%</span><div class="spitze"></div></div>
       <div class="zeilen"><b>${an} von ${empf.length}</b> empfohlenen Einstellungen aktiv<br>${zusatz ? `${zusatz} ${zusatz === 1 ? "Zusatzoption" : "Zusatzoptionen"} aktiv<br>` : ""}<span class="leise">${esc(PRODUKT)} · gemessen ${esc(D.gemessen)}</span></div></div>
     <div class="db-zahlen"><div class="db-k db-zahl ${offen ? "offen klick" : ""}" id="dbOffen"><h3>Ausstehend</h3><b>${offen}</b><span>${offen ? "Änderungen prüfen &amp; anwenden" : "nichts vorgemerkt"}</span></div>
     <div class="db-k db-zahl ${risiko ? "warn klick" : ""}" id="dbRisiko"><h3>Sicherheitsrisiken</h3><b>${risiko}</b><span>${risiko ? "aktiv – verringern den Schutz" : "keines aktiv"}</span></div>
@@ -1283,17 +1445,68 @@ function dashboardWiederherstellung() {
     <button class="knopf still" id="dbZurSeite" style="align-self:flex-start">Alle Sicherungspunkte</button></div>`;
 }
 function verbindeDashboard() {
-  const offen = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size;
+  const offen = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size + schritteVorgemerkt.size;
   document.getElementById("dbAllesZurueck").addEventListener("click", allesZurueck);
   document.getElementById("dbSnapNeu").addEventListener("click", () => { sicherungspunktErstellen(); aktualisiere(); });
   document.getElementById("dbZurSeite").addEventListener("click", () => gehe("schnapp"));
   document.querySelectorAll("[data-db-snap]").forEach(b => b.addEventListener("click", () => sicherungspunktWiederherstellen(+b.dataset.dbSnap)));
   document.querySelectorAll(".db-zeile").forEach(z => z.addEventListener("click", () => gehe("kategorie", z.dataset.kat)));
-  document.getElementById("dbOffen").addEventListener("click", () => { if (offen) vorschau(); });
-  document.getElementById("dbRisiko").addEventListener("click", e => { if (e.currentTarget.classList.contains("klick")) { filter = "sicherheit"; renderAlleInhalt(); springe("alle"); } });
+  document.getElementById("dbGross").addEventListener("click", dbEmpfohlen);
+  document.getElementById("dbOffen").addEventListener("click", () => { if (offen) dbAusstehend(); });
+  document.getElementById("dbRisiko").addEventListener("click", e => { if (e.currentTarget.classList.contains("klick")) { filter = "risikoAn"; renderAlleInhalt(); springe("alle"); } });
   document.getElementById("dbNv").addEventListener("click", () => { filter = "nv"; renderAlleInhalt(); springe("alle"); });
   document.getElementById("dbWaechter").addEventListener("click", () => gehe("waechter"));
 }
+const miniKarte = (p, unter) => `<button class="mini-karte" data-zu-karte="${esc(p.id)}" data-e="${esc(stufenFarbe(p))}"><span>${esc(p.name)}</span><small>${esc(p.id)} · ${esc(unter)}</small></button>`;
+function miniVerbinden() {
+  document.querySelectorAll("#dialog [data-zu-karte]").forEach(b => b.addEventListener("click", () => { zeigeDialog.zu && zeigeDialog.zu(); springeZuKarte(b.dataset.zuKarte); }));
+}
+// Zu einer einzelnen Karte in „Alle Einstellungen“ springen und sie aufklappen
+function springeZuKarte(id) {
+  const p = PUNKTE.find(x => x.id === id);
+  if (!p) return;
+  springeZuGruppe(p.kategorie);
+  setTimeout(() => {
+    let k = document.querySelector(`#alleInhalt .karte[data-id="${CSS.escape(id)}"]`);
+    if (!k) { filter = "alle"; renderAlleInhalt(); k = document.querySelector(`#alleInhalt .karte[data-id="${CSS.escape(id)}"]`); }
+    if (!k) return;
+    setzeOffen(k, true); aktualisiereGruppenKnopf(p.kategorie);
+    k.scrollIntoView({ block: "center", behavior: opt.bewegung !== "aus" ? "smooth" : "auto" });
+  }, 480);
+}
+function dbEmpfohlen() {
+  const empf = PUNKTE.filter(p => bedienbar(p) && empfohlen(p));
+  const zusatzAn = PUNKTE.filter(p => !empfohlen(p) && bedienbar(p) && istAn(p));
+  const gruppen = KATS.filter(k => k.name !== "Experimentell").map(k => {
+    const l = empf.filter(p => p.kategorie === k.name), aus = l.filter(p => !istAn(p));
+    if (!l.length) return "";
+    return `<div class="vorschau-gruppe"><h3>${esc(k.anzeige)} · ${l.length - aus.length} von ${l.length} aktiv</h3>
+      ${aus.length ? `<div class="mini-raster">${aus.map(p => miniKarte(p, "inaktiv")).join("")}</div>` : '<p class="leise">Alle aktiv.</p>'}</div>`;
+  }).join("");
+  zeigeDialog(`<h2>Empfohlene Einstellungen</h2>
+    <p><b>${empf.filter(istAn).length} von ${empf.length}</b> aktiv. Je Bereich stehen die noch inaktiven – Klick führt zur Einstellung.</p>
+    ${gruppen}
+    ${zusatzAn.length ? `<div class="vorschau-gruppe"><h3>Zusatzoptionen aktiv · ${zusatzAn.length}</h3><div class="mini-raster">${zusatzAn.map(p => miniKarte(p, p.senktSchutz ? "⚠ Sicherheitsrisiko" : p.stufe)).join("")}</div></div>` : ""}
+    <div class="knoepfe"><button class="knopf voll" data-a="ok">Schließen</button></div>`);
+  document.getElementById("dialog").classList.add("breit");
+  miniVerbinden();
+}
+function dbAusstehend() {
+  const ein = PUNKTE.filter(p => vorgemerkt.get(p.id) === true), aus = PUNKTE.filter(p => vorgemerkt.get(p.id) === false);
+  const auto = [...assistentVorgemerkt].map(([n, v]) => `${AUTO_TITEL[n] || n}: ${v ? "ein" : "aus"}`)
+    .concat([...waechterVorgemerkt].map(([n, v]) => `Prüfbereich ${(((D.bereiche || []).find(b => b.name === n)) || {}).anzeige || n}: ${v ? "ein" : "aus"}`))
+    .concat([...schritteVorgemerkt].map(([n, v]) => `Bereinigung: ${schrittName(n)}: ${v ? "ein" : "aus"}`));
+  zeigeDialog(`<h2>Ausstehende Änderungen</h2>
+    <p>Vorgemerkt, noch nicht angewendet. Klick führt zur Einstellung.</p>
+    ${ein.length ? `<div class="vorschau-gruppe"><h3>Aktivieren · ${ein.length}</h3><div class="mini-raster">${ein.map(p => miniKarte(p, p.senktSchutz ? "⚠ Sicherheitsrisiko" : "aktivieren")).join("")}</div></div>` : ""}
+    ${aus.length ? `<div class="vorschau-gruppe"><h3>Zurücksetzen · ${aus.length}</h3><div class="mini-raster">${aus.map(p => miniKarte(p, "zurücksetzen")).join("")}</div></div>` : ""}
+    ${auto.length ? `<div class="vorschau-gruppe"><h3>Überwachung &amp; Automatik · ${auto.length}</h3><ul>${auto.map(x => `<li><span class="mono"></span><span>${esc(x)}</span></li>`).join("")}</ul></div>` : ""}
+    <div class="knoepfe"><button class="knopf still" data-a="zu">Schließen</button><button class="knopf voll" data-a="pruefen">Prüfen &amp; anwenden</button></div>`,
+    a => { if (a === "pruefen") setTimeout(vorschau, 30); });
+  document.getElementById("dialog").classList.add("breit");
+  miniVerbinden();
+}
+
 function verbindeStufen(el, kat, vomDashboard) {
   const txt = el.querySelector(".stufe-text");
   el.querySelectorAll(".stufen button").forEach(b => {
@@ -1317,6 +1530,7 @@ function baueFilter(liste, zielId = "filterLeiste", neu = render) {
     gelb: liste.filter(p => stufenFarbe(p) === "Leicht").length,
     rot: liste.filter(p => stufenFarbe(p) === "Tief").length,
     sicherheit: liste.filter(p => p.senktSchutz).length,
+    risikoAn: liste.filter(p => p.senktSchutz && bedienbar(p) && istAn(p)).length,
     nv: liste.filter(p => !bedienbar(p)).length,
   };
   const chip = (f, txt, extra = "") => `<button class="chip ${filter === f ? "an" : ""}" data-filter="${f}">${extra}${txt}<span class="n">${z[f]}</span></button>`; // txt ist eigener, fester Text
@@ -1325,13 +1539,15 @@ function baueFilter(liste, zielId = "filterLeiste", neu = render) {
     chip("gruen", "Basis", '<span class="punkt" style="background:var(--gruen)"></span>') +
     chip("gelb", "Erweitert", '<span class="punkt" style="background:var(--gelb)"></span>') +
     chip("rot", "Maximal", '<span class="punkt" style="background:var(--rot)"></span>') +
-    chip("sicherheit", '<span style="color:var(--rot)">⚠ Sicherheitsrisiko</span>') + chip("nv", "Nicht verfügbar");
+    chip("sicherheit", '<span style="color:var(--rot)">⚠ Sicherheitsrisiko</span>') +
+    (z.risikoAn || filter === "risikoAn" ? chip("risikoAn", '<span style="color:var(--rot)">⚠ aktiv</span>') : "") + chip("nv", "Nicht verfügbar");
   document.querySelectorAll(`#${zielId} [data-filter]`).forEach(c => c.addEventListener("click", () => { filter = c.dataset.filter; neu(); }));
 }
 function passt(p) {
   const f = {
     an: bedienbar(p) && istAn(p), aus: bedienbar(p) && !istAn(p), gruen: stufenFarbe(p) === "Keiner", gelb: stufenFarbe(p) === "Leicht",
     rot: stufenFarbe(p) === "Tief", sicherheit: p.senktSchutz, nv: !bedienbar(p),
+    risikoAn: p.senktSchutz && bedienbar(p) && istAn(p),
   };
   if (filter !== "alle" && !f[filter]) return false;
   if (suchtext) {
@@ -1363,12 +1579,15 @@ function renderListe(kat) {
   verbindeKarten();
 }
 
+const offeneKarten = new Set(), offeneKacheln = new Set();
 function kartenHtml(liste, gruppiert) {
   if (!liste.length) return `<div class="leer"><div class="mini-orca">${orcaSvg()}</div>Hier schwimmt nichts.</div>`;
   let html = "", letzte = null;
   for (const p of liste) {
     if (gruppiert && p.kategorie !== letzte) {
-      html += `<div class="gruppe-titel"><h2>${esc(katName(p.kategorie))}</h2><span>${liste.filter(x => x.kategorie === p.kategorie).length}</span></div>`;
+      const n = liste.filter(x => x.kategorie === p.kategorie).length;
+      html += `<div class="gruppe-titel" id="grp-${esc(p.kategorie)}" data-gruppe="${esc(p.kategorie)}"><h2>${esc(katName(p.kategorie))}</h2><span>${n}</span>
+        <button class="klein-knopf gruppe-klappen" data-klappen="${esc(p.kategorie)}">${liste.filter(x => x.kategorie === p.kategorie).every(x => offeneKarten.has(x.id)) ? "Alle einklappen" : "Alle aufklappen"}</button></div>`;
       letzte = p.kategorie;
     }
     html += karte(p);
@@ -1379,7 +1598,7 @@ function karte(p) {
   const an = istAn(p), geaendert = vorgemerkt.has(p.id), ok = bedienbar(p);
   const status = !ok ? `<span data-tip="${esc(nichtVerfuegbarGrund(p))}">Nicht verfügbar</span>` : an ? '<span class="status-an">Aktiv</span>' : '<span class="status-aus">Inaktiv</span>';
   return `
-  <article class="karte ${geaendert ? "geaendert" : ""} ${ok ? "" : "nv"}" data-id="${esc(p.id)}" data-e="${esc(stufenFarbe(p))}">
+  <article class="karte ${geaendert ? "geaendert" : ""} ${ok ? "" : "nv"}" data-id="${esc(p.id)}" data-kat="${esc(p.kategorie)}" data-e="${esc(stufenFarbe(p))}">
     <div class="karte-kopf">
       <div class="karte-text">
         <h3>${esc(p.name)}</h3>
@@ -1387,6 +1606,7 @@ function karte(p) {
       </div>
       <label class="schalter"><input type="checkbox" ${an ? "checked" : ""} ${ok ? "" : "disabled"} aria-label="${esc(p.name)}"></label>
     </div>
+    ${ok ? "" : `<p class="nv-grund"><b>Nicht verfügbar:</b> ${esc(nichtVerfuegbarGrund(p))}</p>`}
     <p class="karte-erkl">${esc(p.erklaerung)}</p>
     <div class="details"></div>
   </article>`;
@@ -1410,34 +1630,54 @@ function detailsHtml(p) {
       ${p.pfad ? `Pfad <span>${esc(p.pfad)}</span><br>` : ""}${p.wert ? `Wert <span>${esc(p.wert)}</span> · ` : ""}Soll <span>${esc(p.soll)}</span> · Ist <span>${esc(p.ist || "–")}</span>${p.basis ? ` · Ausgangszustand <span>${esc(p.basis.text || "–")}</span>` : ""}</div></div>
     ${bedienb && istAn(p) ? `<div class="karte-aktionen"><button class="knopf still" data-rollback="${esc(p.id)}" data-tip="Stellt den Wert wieder her, der vor der ersten Änderung durch OrcaShield gemessen wurde.">Zurücksetzen</button></div>` : ""}`;
 }
-// Eine Karte auf- oder zuklappen. Im Kachelraster wächst ohnehin die
-// ganze Reihe mit - deshalb klappen alle Karten derselben Reihe gemeinsam.
 function setzeOffen(k, offen) {
   const p = PUNKTE.find(x => x.id === k.dataset.id);
   if (!p) return;
   k.classList.toggle("offen-auf", offen);
+  if (offen) offeneKarten.add(p.id); else offeneKarten.delete(p.id);
   const d = k.querySelector(".details");
   if (offen && !d.dataset.fertig) { d.innerHTML = detailsHtml(p); d.dataset.fertig = "1"; verbindeDetails(k, p); }
 }
-function klappeReihe(k) {
+function klappe(k) {
   const offen = !k.classList.contains("offen-auf");
-  const oben = k.offsetTop;
-  const reihe = [...k.parentElement.querySelectorAll(":scope > .karte[data-id]")].filter(x => Math.abs(x.offsetTop - oben) < 4);
-  for (const x of reihe) setzeOffen(x, offen);
+  setzeOffen(k, offen);
+  protokoll("karte", `${k.dataset.id} ${offen ? "aufgeklappt" : "zugeklappt"}`);
+  aktualisiereGruppenKnopf(k.dataset.kat);
+}
+function aktualisiereGruppenKnopf(kat) {
+  const b = document.querySelector(`[data-klappen="${CSS.escape(kat)}"]`);
+  if (!b) return;
+  const alle = [...document.querySelectorAll(`.karte[data-kat="${CSS.escape(kat)}"]`)];
+  b.textContent = alle.length && alle.every(x => x.classList.contains("offen-auf")) ? "Alle einklappen" : "Alle aufklappen";
 }
 function verbindeKarten() {
   document.querySelectorAll(".karte[data-id]").forEach(k => {
     const p = PUNKTE.find(x => x.id === k.dataset.id);
     if (!p) return;
-    k.querySelector(".karte-text").addEventListener("click", () => klappeReihe(k));
-    k.querySelector(".karte-erkl").addEventListener("click", () => klappeReihe(k));
+    if (offeneKarten.has(p.id)) setzeOffen(k, true);
+    k.querySelector(".karte-text").addEventListener("click", () => klappe(k));
+    k.querySelector(".karte-erkl").addEventListener("click", () => klappe(k));
     const cb = k.querySelector("input");
     cb.addEventListener("change", () => {
       const ziel = cb.checked;
+      orcaMoment(true);
       if (ziel && nurEinzeln(p)) { cb.checked = !ziel; return frage(p, () => { merke(p, true); aktualisiere(); }); }
+      if (ziel && p.typ === "HostsBlock" && hostsZeilen(p) > 20) {
+        cb.checked = false;
+        return zeigeDialog(`<h2>${esc(p.name)}</h2><p>Die Hosts-Datei bekommt dadurch <b>${hostsZeilen(p)}</b> Zeilen von OrcaShield dazu. Jede Zeile liest Windows beim Nachschlagen von Adressen mit – sehr große Hosts-Dateien können Programmstarts verzögern. Einzelne Einträge lassen sich unter „Hosts“ ausnehmen.</p>
+          <div class="knoepfe"><button class="knopf still" data-a="nein">Abbrechen</button><button class="knopf voll" data-a="ja">Vormerken</button></div>`,
+          a => { if (a === "ja") { merke(p, true); aktualisiere(); } });
+      }
       merke(p, ziel); aktualisiere();
     });
   });
+  document.querySelectorAll("[data-klappen]").forEach(b => b.addEventListener("click", () => {
+    const kat = b.dataset.klappen, karten = [...document.querySelectorAll(`.karte[data-kat="${CSS.escape(kat)}"]`)];
+    const auf = !karten.every(x => x.classList.contains("offen-auf"));
+    for (const k of karten) setzeOffen(k, auf);
+    protokoll("karte", `${kat}: alle ${auf ? "aufgeklappt" : "zugeklappt"}`);
+    aktualisiereGruppenKnopf(kat);
+  }));
 }
 function verbindeDetails(k, p) {
   const box = k.querySelector(".code-box"), pre = box.querySelector("pre"), b = befehle(p);
@@ -1695,6 +1935,19 @@ function verdrahteNeues() {
     los({ art: a.art, schluessel: [e.schluessel] }, `${a.art}: ${e.anzeige}`);
   }));
 }
+const schritt = n => (D.bereinigungSchritte || []).find(s => s.name === n);
+const schrittName = n => (schritt(n) || {}).anzeige || n;
+const ENDGUELTIG = ["papierkorb", "schattenkopien"];
+function bereinigungSchritteHtml(bereinigungAn) {
+  const l = D.bereinigungSchritte || [];
+  if (!l.length) return "";
+  const an = s => s.name === "schattenkopien" ? (assistentVorgemerkt.has("schattenkopien") ? assistentVorgemerkt.get("schattenkopien") : !!s.an)
+                                             : (schritteVorgemerkt.has(s.name) ? schritteVorgemerkt.get(s.name) : !!s.an);
+  return `<div class="abschnitt" style="margin-top:14px"><h2>Was die Bereinigung löscht</h2><span class="leise">${bereinigungAn ? "jeder Schritt einzeln" : "gilt, sobald die Bereinigung eingeschaltet ist"}</span></div>
+    <div class="liste-k schritte ${bereinigungAn ? "" : "gedimmt"}">${l.map(s => `<div class="zeile-k ${schritteVorgemerkt.has(s.name) ? "vorgemerkt-zeile" : ""}"><div class="mitte"><b>${esc(s.anzeige)}</b><div>${esc(s.erklaerung)}</div>
+      <div class="folge ${ENDGUELTIG.includes(s.name) ? "rot" : ""}"><b>Folge:</b> ${esc(s.folge)}</div></div>
+      <label class="schalter"><input type="checkbox" ${s.name === "schattenkopien" ? 'data-assistent="schattenkopien"' : `data-schritt="${esc(s.name)}"`} ${an(s) ? "checked" : ""}></label></div>`).join("")}</div>`;
+}
 function renderWaechter() {
   setzeKopf("Überwachung & Automatik", "Hintergrundaufgaben von OrcaShield – einzeln abschaltbar", false);
   const aWert = n => assistentVorgemerkt.has(n) ? assistentVorgemerkt.get(n) : automatikIst(n);
@@ -1706,8 +1959,8 @@ function renderWaechter() {
     <div class="liste-k">
       ${zeile("waechter", "Wächter", `Prüft nach jeder Anmeldung alle Einstellungen und stellt Änderungen wieder her.${D.waechter ? " Zuletzt: " + esc(D.waechter) : ""}`, aWert("waechter"), "assistent")}
       ${zeile("herunterfahren", "Bereinigung beim Herunterfahren", `Entfernt Verläufe, Zwischenspeicher und temporäre Dateien.${D.shutdown ? " Zuletzt: " + esc(D.shutdown) : ""}`, aWert("herunterfahren"), "assistent")}
-      ${zeile("schattenkopien", "Schattenkopien beim Herunterfahren löschen", "Nur zusammen mit der Bereinigung. Löscht ältere Dateiversionen und Wiederherstellungspunkte endgültig.", aWert("schattenkopien"), "assistent")}
     </div>
+    ${bereinigungSchritteHtml(aWert("herunterfahren"))}
     <div class="abschnitt" style="margin-top:14px"><h2>Prüfbereiche des Wächters</h2></div>
     <div class="liste-k">${(D.bereiche || []).map(b => zeile(b.name, esc(b.anzeige), esc(b.text), bAn(b.name), "bereich")).join("")}</div>
     ${neuGefundenHtml()}
@@ -1723,17 +1976,27 @@ function renderWaechter() {
       weiter: () => { cb.checked = ziel; uebernehmen(); }, abbrechen: () => {} });
   };
   document.querySelectorAll("[data-bereich]").forEach(cb => cb.addEventListener("change", () => mitErklaerung(cb, cb.dataset.bereich, () => {
-    const n = cb.dataset.bereich, ursprung = !(D.waechterAus || []).includes(n);
+    const n = cb.dataset.bereich, ursprung = !(D.waechterAus || []).includes(n); orcaMoment();
     if (cb.checked === ursprung) waechterVorgemerkt.delete(n); else waechterVorgemerkt.set(n, cb.checked);
     protokoll("waechter", `Prüfbereich ${n} → ${cb.checked ? "an" : "aus"}`);
     aktualisiereLeiste();
   })));
   document.querySelectorAll("[data-assistent]").forEach(cb => cb.addEventListener("change", () => mitErklaerung(cb, cb.dataset.assistent, () => {
-    const n = cb.dataset.assistent, ursprung = automatikIst(n);
+    const n = cb.dataset.assistent, ursprung = automatikIst(n); orcaMoment();
     if (cb.checked === ursprung) assistentVorgemerkt.delete(n); else assistentVorgemerkt.set(n, cb.checked);
     protokoll("waechter", `${n} → ${cb.checked ? "an" : "aus"}`);
+    if (n === "schattenkopien" && cb.checked) toast("Folge: " + (schritt(n) || {}).folge);
     aktualisiereLeiste();
+    if (n === "herunterfahren") renderWaechter();
   })));
+  document.querySelectorAll("[data-schritt]").forEach(cb => cb.addEventListener("change", () => {
+    const n = cb.dataset.schritt, s = schritt(n), ursprung = !!(s && s.an); orcaMoment();
+    if (cb.checked === ursprung) schritteVorgemerkt.delete(n); else schritteVorgemerkt.set(n, cb.checked);
+    protokoll("waechter", `Bereinigung ${n} → ${cb.checked ? "an" : "aus"}`);
+    if (cb.checked && s) toast("Folge: " + s.folge);
+    aktualisiereLeiste();
+    cb.closest(".zeile-k").classList.toggle("vorgemerkt-zeile", schritteVorgemerkt.has(n));
+  }));
   document.querySelectorAll(".erklaerbar[data-erkl]").forEach(m => m.addEventListener("click", () => erklaere(m.dataset.erkl)));
 }
 
@@ -1742,7 +2005,7 @@ const APP_STUFE = { Light: ["gruen", "Basis"], Standard: ["gelb", "Erweitert"], 
 const APP_STATUS = { Entfernt: "entfernt und nachgeprüft", NichtVorhanden: "war nicht installiert", Fehler: "fehlgeschlagen", Unbekannt: "unbekannte Kennung" };
 // Fortschritt und Abschluss für Apps und Gerätekennung
 function laufDialog(titel) {
-  zeigeDialog(`<h2>${esc(titel)}</h2><div class="mess-fortschritt"><div class="balken"><i id="laufBalken" style="width:2%"></i></div><span id="laufText">Vorbereitung …</span></div>`, null, true);
+  zeigeDialog(`<h2>${esc(titel)}</h2><div class="mess-fortschritt"><div class="balken"><i id="laufBalken" style="width:2%"><span class="balken-orca">${orcaSvg()}</span></i></div><span id="laufText">Vorbereitung …</span></div>`, null, true);
   return f => {
     const b = document.getElementById("laufBalken"), t = document.getElementById("laufText");
     if (b) b.style.width = Math.max(2, f.prozent) + "%";
@@ -1771,11 +2034,18 @@ function renderApps() {
   for (const id of [...appsGewaehlt]) if (!inst.some(x => x.id === id)) appsGewaehlt.delete(id);
   setzeKopf("Apps", `${inst.length} von ${liste.length} installiert`, false);
   const zeile = x => `<div class="zeile-k"${x.installiert ? "" : ' style="opacity:.5"'}><div class="mitte"><b><i style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--${APP_STUFE[x.stufe][0]})"></i>${esc(x.anzeige)}</b>
-      <div>${esc(x.erklaerung)}${x.warnung ? ` <span style="color:var(--gelb)">${esc(x.warnung)}</span>` : ""}${x.installiert ? "" : " · nicht installiert"}</div></div>
+      <div>${esc(x.erklaerung)}${x.warnung ? ` <span style="color:var(--gelb)">${esc(x.warnung)}</span>` : ""}${x.installiert ? "" : x.entfernt ? " · von OrcaShield entfernt" : " · nicht installiert"}</div></div>
+      ${x.zurueck ? `<button class="klein-knopf" data-app-zurueck="${esc(x.id)}">Wieder installieren</button>` : ""}
       <label class="schalter"><input type="checkbox" data-app="${esc(x.id)}" ${appsGewaehlt.has(x.id) ? "checked" : ""} ${x.installiert ? "" : "disabled"}></label></div>`;
   const gruppe = st => { const l = liste.filter(x => x.stufe === st); return l.length ? `<div class="abschnitt" style="margin-top:14px"><h2>${APP_STUFE[st][1]}</h2></div><div class="liste-k">${l.map(zeile).join("")}</div>` : ""; };
+  const weitere = a.weitere || [];
+  const weitereHtml = weitere.length ? `<div class="abschnitt" style="margin-top:22px"><h2>Weitere installierte Apps</h2><span class="leise">${weitere.length} · nicht im Katalog, nur zur Ansicht</span></div>
+    <div class="liste-k">${weitere.map(w => `<div class="zeile-k"><div class="mitte"><b>${esc(w.name)}</b><div>${w.art === "System" ? "Teil von Windows" : "aus dem Store"}${w.schutz ? " · Schutzliste" : !w.entfernbar ? " · Windows lässt sie nicht entfernen" : ""}</div></div></div>`).join("")}</div>` : "";
+  const empfHtml = `<div class="abschnitt" style="margin-top:22px"><h2>Empfohlene Apps</h2><span class="leise">kostenlos · für Datenschutz oder einfach nützlich</span></div>
+    <div class="liste-k">${EMPFOHLENE_APPS.map(e => `<div class="zeile-k"><div class="mitte"><b>${esc(e.name)}</b><div>${esc(e.text)}${e.offen ? " · Open Source" : ""}</div></div>
+      <button class="klein-knopf" data-link="${esc(e.url)}">Website öffnen</button></div>`).join("")}</div>`;
   document.getElementById("seite").innerHTML = `<div class="seite">
-    <div class="box"><p>Systemkritische Pakete stehen auf einer Schutzliste und werden NIE entfernt. Nicht installierte Apps werden übersprungen.</p><p>Entfernte Apps kommen durch den Rückbau nicht zurück.</p></div>
+    <div class="box"><p>Systemkritische Pakete stehen auf einer Schutzliste und werden NIE entfernt. Nicht installierte Apps werden übersprungen.</p><p>Entfernte Apps kommen durch den Rückbau nicht zurück – über „Wieder installieren“ schon.</p></div>
     ${a.fehler ? `<div class="box" style="color:var(--rot)">Apps ließen sich nicht abfragen: ${esc(a.fehler)}</div>` : ""}
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       ${Object.keys(APP_STUFE).map(st => `<button class="knopf still" data-app-stufe="${st}">${APP_STUFE[st][1]} auswählen</button>`).join("")}
@@ -1783,7 +2053,11 @@ function renderApps() {
       <button class="knopf gefahr" id="btnAppsWeg" ${appsGewaehlt.size ? "" : "disabled"}>Ausgewählte entfernen (${appsGewaehlt.size})</button>
     </div>
     ${Object.keys(APP_STUFE).map(gruppe).join("")}
+    ${weitereHtml}
+    ${empfHtml}
   </div>`;
+  document.querySelectorAll("[data-app-zurueck]").forEach(b => b.addEventListener("click", () => appsZurueck([b.dataset.appZurueck])));
+  document.querySelectorAll("[data-link]").forEach(b => b.addEventListener("click", () => linkOeffnen(b.dataset.link)));
   document.querySelectorAll("[data-app-stufe]").forEach(b => b.addEventListener("click", () => {
     const st = b.dataset.appStufe, bis = Object.keys(APP_STUFE).indexOf(st);
     appsGewaehlt.clear();
@@ -1799,6 +2073,32 @@ function renderApps() {
     browserWarnung(x, () => setzen(true));
   }));
   document.getElementById("btnAppsWeg").addEventListener("click", appsEntfernen);
+}
+const EMPFOHLENE_APPS = [
+  { name: "LibreWolf", text: "Browser auf Firefox-Grundlage, ohne Telemetrie, mit Schutz vor Tracking", url: "https://librewolf.net", offen: true },
+  { name: "Proton VPN", text: "VPN mit kostenloser Stufe ohne Datenlimit", url: "https://protonvpn.com", offen: true },
+  { name: "Telegram", text: "Messenger für Computer und Smartphone", url: "https://telegram.org", offen: true },
+  { name: "VLC", text: "Spielt fast jedes Video- und Audioformat", url: "https://www.videolan.org/vlc/", offen: true },
+  { name: "Notepad++", text: "Texteditor für Text und Quelltext", url: "https://notepad-plus-plus.org", offen: true },
+  { name: "Rufus", text: "Bootfähige USB-Sticks erstellen, etwa für eine Windows-Installation", url: "https://rufus.ie", offen: true },
+  { name: "VeraCrypt", text: "Verschlüsselt Laufwerke und Container", url: "https://veracrypt.fr", offen: true },
+  { name: "Revo Uninstaller", text: "Deinstalliert Programme samt Resten (kostenlose Fassung)", url: "https://www.revouninstaller.com", offen: false },
+];
+function linkOeffnen(url) {
+  protokoll("link", url);
+  if (!APP) { toast("Im Programm öffnet sich: " + url); return; }
+  bruecke("oeffnen", { url }).then(() => toast("Im Browser geöffnet")).catch(e => toast(e.message));
+}
+async function appsZurueck(ids) {
+  if (!APP) { toast("Nur im Programm verfügbar"); return; }
+  protokoll("apps", "wieder installieren: " + ids.join(", "));
+  const fort = laufDialog("Apps werden wieder installiert …");
+  let e;
+  try { e = await bruecke("appsZurueck", { ids }, fort); } catch (err) { return laufFehler("Wieder installieren fehlgeschlagen", err); }
+  const name = id => (((D.apps || {}).liste || []).find(x => "app:" + x.id === id) || {}).anzeige || id;
+  protokoll("apps", "Ergebnis: " + (e.abgebrochen || (e.punkte || []).map(p => `${p.id} ${p.status}`).join(" | ")));
+  laufErgebnis(e, "Apps", (e.punkte || []).map(p => `<li><span>${esc(name(p.id))}</span><span class="flags" ${p.ok ? "" : 'style="color:var(--gelb)"'}>${p.ok ? "wieder installiert" : esc(p.grund || p.status)}${p.store ? ` <button class="klein-knopf" data-store="${esc(p.store)}">Im Microsoft Store öffnen</button>` : ""}</span></li>`).join(""));
+  document.querySelectorAll("#dialog [data-store]").forEach(b => b.addEventListener("click", () => linkOeffnen(b.dataset.store)));
 }
 function browserWarnung(x, weiter) {
   zeigeDialog(`<h2 style="color:var(--rot)">⚠ ${esc(x.anzeige)}</h2>
@@ -1824,11 +2124,15 @@ async function appsEntfernen() {
   laufErgebnis(e, "Apps", (e.punkte || []).map(p => `<li><span>${esc(name(p.id))}</span><span class="flags" ${p.ok ? "" : 'style="color:var(--rot)"'}>${esc(APP_STATUS[p.status] || p.status)}${p.grund ? " – " + esc(p.grund) : ""}</span></li>`).join(""));
 }
 
+const GDID_ORTE = ["dein Profil", "Vorlageprofil", "Systemkonto"];
+const kennungWahl = { orte: new Set(GDID_ORTE), zwischenspeicher: true, zugangsdaten: true };
 function renderKennung() {
   const g = D.geraetekennung || { echt: 0, orte: [], sperre: false };
   const net = PUNKTE.find(p => p.id === "NET005");
-  setzeKopf("Gerätekennung", g.echt ? `Echte Kennung gespeichert: ${g.orte.join(", ")}` : "Keine echte Gerätekennung gespeichert", false);
-  const kannWeg = g.echt > 0 && g.sperre;
+  setzeKopf("Gerätekennung (GDID)", g.echt ? `Echte Kennung gespeichert: ${g.orte.join(", ")}` : "Keine echte Gerätekennung gespeichert", false);
+  const gewaehlt = kennungWahl.orte.size || kennungWahl.zwischenspeicher || kennungWahl.zugangsdaten;
+  const kannWeg = g.sperre && gewaehlt && (g.echt > 0 || kennungWahl.zwischenspeicher || kennungWahl.zugangsdaten);
+  const wahl = (key, titel, text, an) => `<div class="zeile-k"><div class="mitte"><b>${esc(titel)}</b><div>${text}</div></div><label class="schalter"><input type="checkbox" data-kwahl="${esc(key)}" ${an ? "checked" : ""}></label></div>`;
   document.getElementById("seite").innerHTML = `<div class="seite">
     <div class="box"><p>Windows bekommt von Microsoft eine Gerätekennung, die mit jeder Kontoanfrage mitgeht – ein VPN hilft dagegen nicht. Gespeichert ist sie an drei Stellen: in deinem Profil, im Vorlageprofil und im Profil des Systemkontos.</p></div>
     <div class="liste-k">
@@ -1836,9 +2140,21 @@ function renderKennung() {
       <div class="zeile-k"><div class="mitte"><b>${net ? esc(net.id + "  " + net.name) : "Sperre der Microsoft-Adressen"}</b><div>${g.sperre ? "steht" : '<span style="color:var(--rot)">steht nicht – ohne sie holt sich Windows sofort eine neue Kennung</span>'}</div></div>
         ${!g.sperre && net ? `<button class="klein-knopf" id="btnZuNet005">Zur Einstellung</button>` : ""}</div>
     </div>
-    <div class="box"><p>Beim Entfernen werden kurz die Dienste für Kontoanmeldung und Geräteverbindungen angehalten, Token-Zwischenspeicher geleert und gespeicherte Microsoft-Konto-Zugangsdaten gelöscht. Danach musst du dich in Office, OneDrive und im Store neu anmelden.</p></div>
-    <div><button class="knopf gefahr" id="btnKennungWeg" ${kannWeg ? "" : "disabled"}>Gerätekennung entfernen</button></div>
+    <div class="abschnitt" style="margin-top:6px"><h2>Was entfernt wird</h2><span class="leise">einzeln wählbar</span></div>
+    <div class="liste-k">
+      ${GDID_ORTE.map(o => wahl("ort:" + o, "Kennung: " + o, g.orte.includes(o) ? '<span style="color:var(--gelb)">echte Kennung gespeichert</span>' : "keine echte Kennung gespeichert", kennungWahl.orte.has(o))).join("")}
+      ${wahl("zwischenspeicher", "Token-Zwischenspeicher", "zwischengespeicherte Anmeldetoken und Geräteverbindungen", kennungWahl.zwischenspeicher)}
+      ${wahl("zugangsdaten", "Microsoft-Konto-Zugangsdaten", '<span style="color:var(--rot)">danach in Office, OneDrive und im Store neu anmelden</span>', kennungWahl.zugangsdaten)}
+    </div>
+    <div class="box"><p>Beim Entfernen werden kurz die Dienste für Kontoanmeldung und Geräteverbindungen angehalten.</p></div>
+    <div><button class="knopf gefahr" id="btnKennungWeg" ${kannWeg ? "" : "disabled"}>Auswahl entfernen</button></div>
   </div>`;
+  document.querySelectorAll("[data-kwahl]").forEach(cb => cb.addEventListener("change", () => {
+    const k = cb.dataset.kwahl;
+    if (k.startsWith("ort:")) { if (cb.checked) kennungWahl.orte.add(k.slice(4)); else kennungWahl.orte.delete(k.slice(4)); }
+    else kennungWahl[k] = cb.checked;
+    orcaMoment(); protokoll("kennung", `${k} ${cb.checked ? "gewählt" : "abgewählt"}`); renderKennung();
+  }));
   document.querySelectorAll(".erklaerbar[data-erkl]").forEach(m => m.addEventListener("click", () => erklaere(m.dataset.erkl)));
   const zu = document.getElementById("btnZuNet005");
   if (zu) zu.addEventListener("click", () => gehe("kategorie", net.kategorie));
@@ -1849,15 +2165,59 @@ async function kennungEntfernen() {
   protokoll("kennung", "entfernen");
   const fort = laufDialog("Gerätekennung wird entfernt …");
   let e;
-  try { e = await bruecke("geraetekennung", {}, fort); } catch (err) { return laufFehler("Entfernen fehlgeschlagen", err); }
+  try { e = await bruecke("geraetekennung", { orte: [...kennungWahl.orte], zwischenspeicher: kennungWahl.zwischenspeicher, zugangsdaten: kennungWahl.zugangsdaten }, fort); } catch (err) { return laufFehler("Entfernen fehlgeschlagen", err); }
   const p = (e.punkte || [])[0] || {};
   protokoll("kennung", "Ergebnis: " + (e.abgebrochen || `${p.status} ${p.grund || ""}`));
-  laufErgebnis(e, p.ok ? "Keine echte Gerätekennung mehr gespeichert" : "Nicht vollständig",
+  laufErgebnis(e, p.ok ? "Gerätekennung entfernt" : "Nicht vollständig",
     (p.schritte || []).map(s => `<li><span>${esc(s)}</span></li>`).join("") + (p.ok ? "" : `<li><span style="color:var(--rot)">${esc(p.grund || p.status || "")}</span></li>`));
 }
 
+const hostsVorgemerkt = new Map();   // Name -> true (wieder sperren) / false (ausnehmen)
+function renderHosts() {
+  const h = D.hosts || { abschnitte: [], ausnahmen: [], zeilenAlle: 0 };
+  const aus = new Set(h.ausnahmen || []);
+  const gesperrt = n => hostsVorgemerkt.has(n) ? hostsVorgemerkt.get(n) : !aus.has(n);
+  const alle = h.abschnitte.reduce((s, a) => s + a.eintraege.length, 0);
+  setzeKopf("Hosts", `${alle} Einträge in ${h.abschnitte.length} Abschnitten · ${aus.size} ausgenommen`, false);
+  const abschnitt = a => {
+    const p = PUNKTE.find(x => x.id === a.punkt);
+    return `<div class="abschnitt" style="margin-top:14px"><h2>${esc(p ? p.name : a.name)}</h2><span class="leise">${esc(a.punkt)} · ${a.aktiv ? "steht" : "nicht gesetzt"} · ${a.eintraege.filter(gesperrt).length} von ${a.eintraege.length} gesperrt · ${a.zeilen} Zeilen in der Hosts-Datei</span>
+      ${p ? `<button class="klein-knopf" style="margin-left:auto" data-zu-karte="${esc(p.id)}">Zur Einstellung</button>` : ""}</div>
+      <div class="hosts-raster">${a.eintraege.map(n => `<label class="hosts-eintrag ${hostsVorgemerkt.has(n) ? "geaendert" : ""}"><input type="checkbox" data-host="${esc(n)}" ${gesperrt(n) ? "checked" : ""}><span class="mono">${esc(n)}</span></label>`).join("")}</div>`;
+  };
+  document.getElementById("seite").innerHTML = `<div class="seite breit">
+    <div class="box"><p>Die Hosts-Datei (C:\\Windows\\System32\\drivers\\etc\\hosts) beantwortet Adressen, bevor Windows sie im Internet nachschlägt. OrcaShield schreibt nur in seinen eigenen markierten Block; was außerhalb steht, bleibt unangetastet.</p>
+      <p>Angehakt = gesperrt. Wer etwa OneDrive oder Office erlauben will, nimmt die passenden Einträge heraus.</p>
+      <p>Mit allen Abschnitten bekommt die Hosts-Datei <b>${h.zeilenAlle}</b> Zeilen von OrcaShield. Jede Zeile liest Windows beim Nachschlagen von Adressen mit – sehr große Hosts-Dateien können Programmstarts verzögern.</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="knopf voll" id="btnHostsUebernehmen" ${hostsVorgemerkt.size ? "" : "disabled"}>Änderungen übernehmen (${hostsVorgemerkt.size})</button>
+      <button class="knopf still" id="btnHostsVerwerfen" ${hostsVorgemerkt.size ? "" : "disabled"}>Verwerfen</button></div>
+    ${h.abschnitte.map(abschnitt).join("")}
+  </div>`;
+  document.querySelectorAll("[data-host]").forEach(cb => cb.addEventListener("change", () => {
+    const n = cb.dataset.host, ursprung = !aus.has(n);
+    if (cb.checked === ursprung) hostsVorgemerkt.delete(n); else hostsVorgemerkt.set(n, cb.checked);
+    orcaMoment(); protokoll("hosts", `${n} ${cb.checked ? "sperren" : "ausnehmen"}`); renderHosts();
+  }));
+  document.querySelectorAll("#seite [data-zu-karte]").forEach(b => b.addEventListener("click", () => springeZuKarte(b.dataset.zuKarte)));
+  document.getElementById("btnHostsVerwerfen").addEventListener("click", () => { hostsVorgemerkt.clear(); renderHosts(); });
+  document.getElementById("btnHostsUebernehmen").addEventListener("click", hostsUebernehmen);
+}
+async function hostsUebernehmen() {
+  if (!APP) { toast("Nur im Programm verfügbar"); return; }
+  const ausnehmen = [...hostsVorgemerkt].filter(([, v]) => !v).map(([k]) => k), sperren = [...hostsVorgemerkt].filter(([, v]) => v).map(([k]) => k);
+  protokoll("hosts", `übernehmen: ausnehmen ${ausnehmen.length}, sperren ${sperren.length}`);
+  const fort = laufDialog("Hosts-Datei wird angepasst …");
+  let e;
+  try { e = await bruecke("hosts", { ausnehmen, sperren }, fort); } catch (err) { return laufFehler("Hosts nicht angepasst", err); }
+  if (!e.abgelehnt && !e.abgebrochen) for (const p of e.punkte || []) if (p.ok) hostsVorgemerkt.delete(p.id.slice(6));
+  laufErgebnis(e, "Hosts", (e.punkte || []).map(p => `<li><span class="mono">${esc(p.id.slice(6))}</span><span class="flags" ${p.ok ? "" : 'style="color:var(--rot)"'}>${p.ok ? (p.richtung === "aus" ? "ausgenommen" : "wieder gesperrt") : esc(p.grund || p.status)}</span></li>`).join(""));
+}
+// Ä15d: Beim Einschalten eines Hosts-Abschnitts sagen, um wie viele Zeilen die Hosts-Datei wächst
+function hostsZeilen(p) { const a = ((D.hosts || {}).abschnitte || []).find(x => x.punkt === p.id); return a ? a.zeilen : 0; }
+
 // --- Schnappschüsse & Rollback -------------------------------------------
 const MUELL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
+const STIFT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
 // Fortlaufende Nummer nach der höchsten vorhandenen – nach dem Löschen entstand sonst ein doppelter Name
 function naechsterName(liste, wort) {
   const n = Math.max(0, ...liste.map(x => { const m = new RegExp("^" + wort + " (\\d+)$").exec(x.name || ""); return m ? +m[1] : 0; }));
@@ -1872,10 +2232,41 @@ function allesZurueck() {
   if (!n) { toast("OrcaShield hat hier noch nichts gesetzt – es gibt nichts zurückzusetzen"); return; }
   aktualisiere(); vorschau();
 }
-function sicherungspunktErstellen() {
+const HOECHSTENS_SICHERUNGSPUNKTE = 30;
+let neuerSicherungspunkt = null;
+function sicherungspunktErstellen(automatisch = false, zustand = zustandJetzt()) {
   const l = laden("orca-schnapp", []);
-  l.unshift({ name: naechsterName(l, "Sicherungspunkt"), zeit: new Date().toLocaleString("de-DE"), zustand: zustandJetzt() });
-  speichern("orca-schnapp", l); protokoll("rollback", "Sicherungspunkt erstellt: " + l[0].name); toast("Sicherungspunkt erstellt");
+  const name = automatisch ? `Automatisch vor dem Anwenden ${new Date().toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : naechsterName(l, "Sicherungspunkt");
+  l.unshift({ name, zeit: new Date().toLocaleString("de-DE"), zustand });
+  const weg = l.splice(HOECHSTENS_SICHERUNGSPUNKTE);
+  speichern("orca-schnapp", l);
+  neuerSicherungspunkt = name;
+  const an = Object.values(zustand).filter(Boolean).length, alle = Object.keys(zustand).length;
+  protokoll("rollback", `Sicherungspunkt erstellt: ${name} (${an} von ${alle} aktiv)` + (weg.length ? ` · ältester entfernt: ${weg.map(x => x.name).join(", ")}` : ""));
+  // Sichtbare Rückmeldung (Ä6): Der Punkt hält nur fest, welche Einstellungen an sind – das geht in Sekundenbruchteilen
+  if (!automatisch) toast(`„${name}“ erstellt – ${an} von ${alle} Einstellungen aktiv festgehalten`);
+  return name;
+}
+function sicherungspunktUmbenennen(i) {
+  const s = laden("orca-schnapp", [])[i];
+  if (!s) return;
+  zeigeDialog(`<h2>Sicherungspunkt umbenennen</h2>
+    <input id="snapName" class="eingabe" maxlength="80" value="${esc(s.name)}" aria-label="Neuer Name">
+    <div class="knoepfe"><button class="knopf still" data-a="zu">Abbrechen</button><button class="knopf voll" data-a="ok">Umbenennen</button></div>`,
+    a => {
+      if (a !== "ok") return;
+      const neu = (umbenennen.wert || "").trim().slice(0, 80);
+      if (!neu) return;
+      const l = laden("orca-schnapp", []);
+      if (!l[i]) return;
+      protokoll("rollback", `Sicherungspunkt umbenannt: ${l[i].name} → ${neu}`);
+      l[i].name = neu; speichern("orca-schnapp", l); renderSchnapp();
+    });
+  const f = document.getElementById("snapName");
+  const umbenennen = { wert: s.name };
+  f.addEventListener("input", () => { umbenennen.wert = f.value; });
+  f.addEventListener("keydown", e => { if (e.key === "Enter") { umbenennen.wert = f.value; document.querySelector('#dialog [data-a="ok"]').click(); } });
+  f.focus(); f.select();
 }
 function sicherungspunktWiederherstellen(i) {
   const s = laden("orca-schnapp", [])[i];
@@ -1890,9 +2281,17 @@ function renderSchnapp() {
   document.getElementById("seite").innerHTML = `<div class="seite">
     <div class="box"><b>Sicherungspunkte</b><p>Ein Sicherungspunkt speichert, welche Einstellungen aktiv sind. Beim Wiederherstellen werden die Unterschiede zur Prüfung vorgelegt, bevor etwas geändert wird. Der Ausgangszustand vor der ersten Änderung ist immer gesichert.</p><p class="leise">Im Entwurf werden Sicherungspunkte im Browser gespeichert, in der App als Datei im Datenordner von OrcaShield.</p></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="knopf voll" id="btnSnapNeu">Sicherungspunkt erstellen</button><button class="knopf gefahr" id="btnAllesZurueck" data-tip="Setzt alle von OrcaShield verwalteten Einstellungen auf den Zustand vor der ersten Änderung zurück.">Auf Ausgangszustand zurücksetzen</button></div>
-    <div class="liste-k">${liste.length ? liste.map((s, i) => `<div class="zeile-k"><div class="mitte"><b>${esc(s.name)}</b><div>${esc(s.zeit)} · ${Object.values(s.zustand).filter(Boolean).length} Punkte aktiv</div></div>
-      <button class="knopf still" data-snap-zu="${i}">Wiederherstellen</button><button class="muell" data-snap-weg="${i}" aria-label="Sicherungspunkt löschen">${MUELL}</button></div>`).join("") : '<p class="leise">Noch keine Sicherungspunkte.</p>'}</div></div>`;
+    <div class="liste-k">
+      <div class="zeile-k fest"><div class="mitte"><b>Ausgangszustand</b><div>vor der ersten Änderung gemessen · bleibt immer erhalten, nicht löschbar</div></div>
+        <button class="knopf still" data-ausgang>Zurücksetzen</button></div>
+      ${liste.map((s, i) => `<div class="zeile-k ${s.name === neuerSicherungspunkt ? "neu" : ""}"><div class="mitte"><b>${esc(s.name)}</b><div>${esc(s.zeit)} · ${Object.values(s.zustand).filter(Boolean).length} von ${Object.keys(s.zustand).length} Einstellungen aktiv</div></div>
+      <button class="knopf still" data-snap-zu="${i}">Wiederherstellen</button><button class="muell umbenennen" data-snap-name="${i}" aria-label="Sicherungspunkt umbenennen" data-tip="Umbenennen">${STIFT}</button><button class="muell" data-snap-weg="${i}" aria-label="Sicherungspunkt löschen">${MUELL}</button></div>`).join("")}
+      ${liste.length ? "" : '<p class="leise">Noch keine Sicherungspunkte. Bei jedem Anwenden entsteht vorher automatisch einer.</p>'}</div>
+    <p class="leise">${liste.length} von höchstens ${HOECHSTENS_SICHERUNGSPUNKTE} Sicherungspunkten – beim nächsten fällt der älteste weg. Der Ausgangszustand zählt nicht mit.</p></div>`;
+  neuerSicherungspunkt = null;
   document.getElementById("btnSnapNeu").addEventListener("click", () => { sicherungspunktErstellen(); renderSchnapp(); });
+  document.querySelector("[data-ausgang]").addEventListener("click", allesZurueck);
+  document.querySelectorAll("[data-snap-name]").forEach(b => b.addEventListener("click", () => sicherungspunktUmbenennen(+b.dataset.snapName)));
   document.getElementById("btnAllesZurueck").addEventListener("click", allesZurueck);
   document.querySelectorAll("[data-snap-zu]").forEach(b => b.addEventListener("click", () => sicherungspunktWiederherstellen(+b.dataset.snapZu)));
   document.querySelectorAll("[data-snap-weg]").forEach(b => b.addEventListener("click", () => {
@@ -1981,8 +2380,27 @@ function renderProfile() {
 // --- Verlauf -------------------------------------------------------------
 const verlaufStufe = s => /FEHLER|ALARM/.test(s) ? "fehler" : /WARN/.test(s) ? "warn" : "";
 function verlaufZeile(v) {
-  return `<div class="v-zeile ${verlaufStufe(v.stufe)}"><time>${esc(v.datum.slice(0, 6))} ${esc(v.zeit.slice(0, 5))}</time><div class="t"><b>${esc(v.quelle.toLowerCase())}</b>${esc(v.text)}</div></div>`;
+  return `<div class="v-zeile ${verlaufStufe(v.stufe)} klickbar" data-datum="${esc(v.datum)}" data-zeit="${esc(v.zeit)}" data-quelle="${esc(v.quelle)}" data-stufe="${esc(v.stufe)}" data-text="${esc(v.text)}"><time>${esc(v.datum.slice(0, 6))} ${esc(v.zeit.slice(0, 5))}</time><div class="t"><b>${esc(v.quelle.toLowerCase())}</b>${esc(v.text)}</div></div>`;
 }
+const VERLAUF_QUELLE = { GUI: "Oberfläche", WAECHTER: "Wächter nach der Anmeldung", SHUTDOWN: "Bereinigung beim Herunterfahren", BASELINE: "Ausgangszustand", BACKUP: "Sicherung", STATE: "Zustandsdatei", DEBLOAT: "Apps", RESTE: "Reste von Apps", INSTALL: "Einrichtung", AUFGABE: "geplante Aufgabe", HOSTS: "Hosts-Datei" };
+const VERLAUF_STUFE = { OK: "erledigt", INFO: "Information", WARN: "Warnung", FEHLER: "Fehler", SKIP: "übersprungen" };
+function verlaufDetails(z) {
+  const ids = [...new Set((z.text.match(/\b[A-Z]{2,4}\d{3}\b/g) || []))].map(id => PUNKTE.find(p => p.id === id)).filter(Boolean);
+  zeigeDialog(`<h2>Ereignis</h2>
+    <div class="box"><div class="technik">Zeit <span>${esc(z.datum)} ${esc(z.zeit)}</span> · Bereich <span>${esc(VERLAUF_QUELLE[z.quelle] || z.quelle)}</span> · Ergebnis <span>${esc(VERLAUF_STUFE[z.stufe] || z.stufe)}</span></div></div>
+    ${ids.length ? `<div class="vorschau-gruppe"><h3>Betrifft</h3><div class="mini-raster">${ids.map(p => miniKarte(p, istAn(p) ? "jetzt aktiv" : bedienbar(p) ? "jetzt inaktiv" : "nicht verfügbar")).join("")}</div></div>` : ""}
+    <div class="code-box"><div class="reiter"><button class="an">Eintrag im Protokoll</button><button class="kopieren" data-a="kopieren">Kopieren</button></div><pre>${esc(`${z.datum} | ${z.zeit} | ${z.quelle} | ${z.stufe} | ${z.text}`)}</pre></div>
+    <div class="knoepfe"><button class="knopf voll" data-a="ok">Schließen</button></div>`,
+    a => { if (a === "kopieren") kopiere(`${z.datum} | ${z.zeit} | ${z.quelle} | ${z.stufe} | ${z.text}`); });
+  miniVerbinden();
+}
+document.addEventListener("click", e => {
+  const z = e.target.closest(".v-zeile[data-text]");
+  if (!z) return;
+  document.getElementById("verlaufDrop").classList.remove("auf");
+  protokoll("verlauf", "Eintrag geöffnet: " + z.dataset.text.slice(0, 80));
+  verlaufDetails(z.dataset);
+});
 function letzteZurueckgestellt() {
   const v = D.verlauf || []; let i = v.length - 1;
   while (i >= 0 && !/Wächter gestartet/.test(v[i].text)) i--;
@@ -2008,9 +2426,15 @@ function renderVerlauf() {
 
 // --- Bekannt, Über ----------------------------------------------------------
 function renderBekannt() {
-  setzeKopf("Nicht unterstützt", "Bekannte Optionen, die OrcaShield bewusst nicht setzt – mit Begründung", false);
+  setzeKopf("Nicht unterstützt", `${(D.bekannt || []).length} bekannte Optionen, die OrcaShield bewusst nicht setzt – mit Begründung. Sie gehören nicht zu den ${PUNKTE.length} Einstellungen.`, false);
+  const PRUEFBAR = "auf diesem Gerät nicht prüfbar";
+  const vorn = (D.bekannt || []).filter(b => b.art === PRUEFBAR), rest = (D.bekannt || []).filter(b => b.art !== PRUEFBAR);
   let html = '<div class="raster">', letzte = null;
-  for (const b of D.bekannt || []) {
+  if (vorn.length) {
+    html += `<div class="gruppe-titel"><h2>Auf diesem Gerät nicht prüfbar</h2><span>${vorn.length}</span></div>`;
+    for (const b of vorn) html += `<article class="karte nv" data-e=""><div class="karte-text"><h3>${esc(b.name)}</h3><div class="meta"><span>${esc(katName(b.kategorie))}</span></div></div><p class="karte-erkl" style="-webkit-line-clamp:unset">${esc(b.grund)}</p></article>`;
+  }
+  for (const b of rest) {
     if (b.kategorie !== letzte) { html += `<div class="gruppe-titel"><h2>${esc(katName(b.kategorie))}</h2></div>`; letzte = b.kategorie; }
     html += `<article class="karte nv" data-e=""><div class="karte-text"><h3>${esc(b.name)}</h3><div class="meta"><span>${esc(b.art)}</span></div></div><p class="karte-erkl" style="-webkit-line-clamp:unset">${esc(b.grund)}</p></article>`;
   }
@@ -2048,7 +2472,7 @@ function bestandsaufnahmeStart() {
   const o = document.getElementById("overlay");
   o.innerHTML = `<div class="bestand"><div class="orca-gross">${orcaSvg()}</div><h2>Bestandsaufnahme</h2>
     <p>Der aktuelle Zustand des Systems wird ermittelt. Es wird nichts verändert.</p>
-    <div class="mess-fortschritt" id="messFortschritt"><div class="balken"><i id="messBalken" style="width:2%"></i></div><span id="messText">Engine wird gestartet …</span></div>
+    <div class="mess-fortschritt" id="messFortschritt"><div class="balken"><i id="messBalken" style="width:2%"><span class="balken-orca">${orcaSvg()}</span></i></div><span id="messText">Engine wird gestartet …</span></div>
     <div class="scan" id="scan"></div>
     <div style="display:flex;justify-content:center"><button class="knopf voll" id="btnBestandOk" style="visibility:hidden">Weiter</button></div></div>`;
   o.classList.add("auf");
@@ -2091,10 +2515,10 @@ function aktualisiereRing() {
   document.getElementById("ring").style.setProperty("--p", pr);
   document.getElementById("ringZahl").textContent = pr + "%";
   document.getElementById("ringText").innerHTML = `<b>${an} von ${b.length}</b><br>empfohlenen Einstellungen aktiv`;
-  if (pr === 100) { const l = document.getElementById("logoOrca"); l.classList.remove("sprung"); void l.offsetWidth; l.classList.add("sprung"); }
+  if (pr === 100) logoBewegung("sprung", 1500);
 }
 function aktualisiereLeiste() {
-  const n = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size;
+  const n = vorgemerkt.size + waechterVorgemerkt.size + assistentVorgemerkt.size + schritteVorgemerkt.size;
   document.getElementById("nAenderungen").textContent = n;
   document.getElementById("leiste").classList.toggle("weg", n === 0);
 }
@@ -2112,6 +2536,7 @@ const automatikIst = n => n === "waechter" ? (D && D.waechterAktiv !== undefined
 const AUTO_TITEL = { waechter: "Wächter", herunterfahren: "Bereinigung beim Herunterfahren", schattenkopien: "Schattenkopien beim Herunterfahren löschen" };
 function zeigeDialog(html, fertig, fest = false) {
   const s = document.getElementById("schleier"), d = document.getElementById("dialog");
+  d.classList.remove("breit");
   d.innerHTML = html; s.classList.add("auf");
   const titel = (d.querySelector("h2")?.textContent || "").trim();
   protokoll("dialog", "geöffnet: " + titel);
@@ -2145,9 +2570,9 @@ function vorschau() {
     ${sperr || ns ? `<div class="box">${sperr ? `<b>${sperr}</b> per Richtlinie – der zugehörige Schalter in Windows wird gesperrt. ` : ""}${ns ? `<b>${ns}</b> erfordern einen Neustart.` : ""}</div>` : ""}
     ${ein.length ? `<div class="vorschau-gruppe"><h3>Aktivieren · ${ein.length}</h3><ul>${ein.map(li).join("")}</ul></div>` : ""}
     ${aus.length ? `<div class="vorschau-gruppe"><h3>Zurücksetzen · ${aus.length}</h3><ul>${aus.map(li).join("")}</ul></div>` : ""}
-    ${assistentVorgemerkt.size || wAus.length || wAn.length ? `<div class="vorschau-gruppe"><h3>Überwachung & Automatik</h3><ul>${[...assistentVorgemerkt].map(([n, v]) => `<li><span class="mono"></span><span>${AUTO_TITEL[n] || n}: ${v ? "ein" : "aus"}</span></li>`).join("")}${[...wAus.map(x => x + ": aus"), ...wAn.map(x => x + ": ein")].map(x => `<li><span class="mono"></span><span>Prüfbereich ${esc(x)}</span></li>`).join("")}</ul></div>` : ""}
+    ${assistentVorgemerkt.size || wAus.length || wAn.length || schritteVorgemerkt.size ? `<div class="vorschau-gruppe"><h3>Überwachung & Automatik</h3><ul>${[...assistentVorgemerkt].map(([n, v]) => `<li><span class="mono"></span><span>${AUTO_TITEL[n] || n}: ${v ? "ein" : "aus"}</span></li>`).join("")}${[...wAus.map(x => x + ": aus"), ...wAn.map(x => x + ": ein")].map(x => `<li><span class="mono"></span><span>Prüfbereich ${esc(x)}</span></li>`).join("")}${[...schritteVorgemerkt].map(([n, v]) => `<li><span class="mono"></span><span>Bereinigung: ${esc(schrittName(n))}: ${v ? "ein" : "aus"}</span></li>`).join("")}</ul></div>` : ""}
     <div class="code-box"><div class="reiter"><button class="an">PowerShell</button><button class="kopieren" data-a="kopieren">Kopieren</button></div><pre>${esc(skript)}</pre></div>
-    <div class="knoepfe"><button class="knopf still" data-a="zu">Zurück</button>${APP && (ein.length || aus.length || assistentVorgemerkt.size || wAus.length || wAn.length)
+    <div class="knoepfe"><button class="knopf still" data-a="zu">Zurück</button>${APP && (ein.length || aus.length || assistentVorgemerkt.size || wAus.length || wAn.length || schritteVorgemerkt.size)
       ? `<button class="knopf voll" data-a="anwenden">${SIMULATION ? "Simulieren" : "Anwenden"}</button>`
       : '<button class="knopf voll" data-a="ok">Schließen</button>'}</div>`,
     a => { if (a === "kopieren") { kopiere(skript); setTimeout(vorschau, 50); } if (a === "anwenden") setTimeout(anwendenImProgramm, 30); });
@@ -2157,7 +2582,7 @@ function vorschau() {
 //  Bedienung
 // ==============================================================
 document.getElementById("btnAnwenden").addEventListener("click", vorschau);
-document.getElementById("btnVerwerfen").addEventListener("click", () => { vorgemerkt.clear(); waechterVorgemerkt.clear(); assistentVorgemerkt.clear(); aktualisiere(); toast("Vormerkungen verworfen"); });
+document.getElementById("btnVerwerfen").addEventListener("click", () => { vorgemerkt.clear(); waechterVorgemerkt.clear(); assistentVorgemerkt.clear(); schritteVorgemerkt.clear(); aktualisiere(); toast("Vormerkungen verworfen"); });
 document.getElementById("ringBox").addEventListener("click", () => springe("dashboard"));
 
 // --- Einblendungen: ein Element, immer ganz im Fenster -----------------------
@@ -2189,6 +2614,17 @@ document.getElementById("ringBox").addEventListener("click", () => springe("dash
   window.addEventListener("blur", weg);
 })();
 document.getElementById("btnSendetNichts").addEventListener("click", () => gehe("ueber"));
+document.getElementById("btnZurueck").addEventListener("click", zurueck);
+document.getElementById("marke").addEventListener("click", () => {
+  const jetzt = Date.now(), k = document.getElementById("marke");
+  k.klicks = (k.klicks || []).filter(z => jetzt - z < 900).concat(jetzt);
+  if (k.klicks.length < 3) return;
+  k.klicks = [];
+  protokoll("easteregg", "Logo dreimal geklickt");
+  if (D) gehe("ueber");
+  logoBewegung("sprung", 1500);
+  orcaSchwimmt();
+});
 document.getElementById("btnVerlauf").addEventListener("click", e => { e.stopPropagation(); fuelleVerlaufDrop(); document.getElementById("verlaufDrop").classList.toggle("auf"); });
 document.getElementById("btnVerlaufGross").addEventListener("click", () => { document.getElementById("verlaufDrop").classList.remove("auf"); gehe("verlauf"); });
 document.addEventListener("click", e => { if (!e.target.closest(".verlauf-wrap")) document.getElementById("verlaufDrop").classList.remove("auf"); });
@@ -2224,10 +2660,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// ==============================================================
-//  Anpassen
-// ==============================================================
-const VORGABE = { sprache: "de", spalten: "4", spaltenKat: "4", theme: "dark", akzent: "#4cc3ff", dichte: "normal", ansicht: "raster", ecken: "normal", schrift: 15, technik: "an", bewegung: "an", wellen: "an" };
+const VORGABE = { sprache: "de", groesse: "mittel", groesseKat: "mittel", theme: "dark", akzent: "#4cc3ff", dichte: "normal", ansicht: "raster", ecken: "normal", schrift: 15, technik: "an", bewegung: "an", wellen: "an" };
 const FARBEN = [["#4cc3ff", "Eisblau"], ["#5b8cff", "Tiefsee"], ["#46c98b", "Nordlicht"], ["#a78bfa", "Polarnacht"], ["#e8edf3", "Schnee"], ["#8b949e", "Fels"]];
 let opt = { ...VORGABE, ...laden("orca-gui2", {}) };
 // Adresszusatz: ?seite=verlauf&thema=dunkel (auch #dunkel / #hell) - für Lesezeichen und Vorschaubilder
@@ -2239,7 +2672,7 @@ function wendeAn() {
   SP = vorschauSprache || opt.sprache;
   r.lang = SP;
   r.dataset.theme = vorschauThema || opt.theme;
-  for (const k of ["dichte", "ansicht", "ecken", "technik", "bewegung", "wellen", "spalten", "spaltenKat"]) r.dataset[k] = opt[k];
+  for (const k of ["dichte", "ansicht", "ecken", "technik", "bewegung", "wellen", "groesse", "groesseKat"]) r.dataset[k] = opt[k];
   r.style.setProperty("--akzent", opt.akzent);
   r.style.setProperty("--schrift", opt.schrift + "px");
   document.getElementById("schrift").value = opt.schrift;
@@ -2279,13 +2712,15 @@ async function anwendenImProgramm() {
     schattenkopien: assistentVorgemerkt.has("schattenkopien") ? (assistentVorgemerkt.get("schattenkopien") ? "ein" : "aus") : "",
     bereicheAus: [...waechterVorgemerkt].filter(([, v]) => !v).map(([k]) => k),
     bereicheAn: [...waechterVorgemerkt].filter(([, v]) => v).map(([k]) => k),
+    schritteAus: [...schritteVorgemerkt].filter(([, v]) => !v).map(([k]) => k),
+    schritteAn: [...schritteVorgemerkt].filter(([, v]) => v).map(([k]) => k),
   };
-  const mitAuto = !!(auto.waechter || auto.bereinigung || auto.schattenkopien || auto.bereicheAus.length || auto.bereicheAn.length);
+  const mitAuto = !!(auto.waechter || auto.bereinigung || auto.schattenkopien || auto.bereicheAus.length || auto.bereicheAn.length || auto.schritteAus.length || auto.schritteAn.length);
   if (!ein.length && !aus.length && !mitAuto) { toast("Nichts zum Anwenden"); return; }
   protokoll("anwenden", `${SIMULATION ? "Simulation" : "echt"} · ein: ${ein.join(", ") || "–"} · zurück: ${aus.join(", ") || "–"}` + (mitAuto ? ` · Automatik: ${JSON.stringify(auto)}` : ""));
   zeigeDialog(`<h2>Wird angewendet …</h2>
     <p>Zuerst wird der Ausgangszustand gesichert, dann jede Einstellung gesetzt und sofort nachgeprüft.</p>
-    <div class="mess-fortschritt"><div class="balken"><i id="anwBalken" style="width:2%"></i></div><span id="anwText">Vorbereitung …</span></div>`, null, true);
+    <div class="mess-fortschritt"><div class="balken"><i id="anwBalken" style="width:2%"><span class="balken-orca">${orcaSvg()}</span></i></div><span id="anwText">Vorbereitung …</span></div>`, null, true);
   const fort = f => {
     const b = document.getElementById("anwBalken"), t = document.getElementById("anwText");
     if (b) b.style.width = Math.max(2, f.prozent) + "%";
@@ -2293,8 +2728,8 @@ async function anwendenImProgramm() {
   };
   let erg = { simulation: SIMULATION, punkte: [], vorgaenge: [] };
   try {
-    erg = await bruecke("anwenden", mitAuto ? { ein, aus, automatik: auto } : { ein, aus }, fort);
-    if (!erg.abgebrochen && erg.automatikAbgebrochen) erg.punkte = [...(erg.punkte || []), ...["waechter", "herunterfahren", "schattenkopien"].filter(n => assistentVorgemerkt.has(n)).concat([...waechterVorgemerkt.keys()].map(k => "bereich:" + k))
+    const vorher = zustandJetzt();
+    if (!erg.abgebrochen && erg.automatikAbgebrochen) erg.punkte = [...(erg.punkte || []), ...["waechter", "herunterfahren", "schattenkopien"].filter(n => assistentVorgemerkt.has(n)).concat([...waechterVorgemerkt.keys()].map(k => "bereich:" + k)).concat([...schritteVorgemerkt.keys()].map(k => "schritt:" + k))
       .map(id => ({ id, richtung: "", ok: false, status: "Fehler", grund: erg.automatikAbgebrochen }))];
   } catch (e) {
     zeigeDialog(`<h2 style="color:var(--rot)">Anwenden fehlgeschlagen</h2><p>${esc(e.message)}</p><p>Es kann sein, dass ein Teil schon gesetzt wurde – die nächste Messung zeigt den Stand.</p>
@@ -2315,9 +2750,10 @@ async function anwendenImProgramm() {
   for (const r of gut) {
     if (r.id in AUTO_TITEL) assistentVorgemerkt.delete(r.id);
     else if (r.id.startsWith("bereich:")) waechterVorgemerkt.delete(r.id.slice(8));
+    else if (r.id.startsWith("schritt:")) schritteVorgemerkt.delete(r.id.slice(8));
   }
   const AUTO_NAME = AUTO_TITEL;
-  const nameVon = id => AUTO_NAME[id] || (id.startsWith("bereich:") ? "Prüfbereich " + (((D.bereiche || []).find(b => b.name === id.slice(8)) || {}).anzeige || id.slice(8)) : null) || (PUNKTE.find(p => p.id === id) || {}).name || id;
+  const nameVon = id => AUTO_NAME[id] || (id.startsWith("schritt:") ? "Bereinigung: " + schrittName(id.slice(8)) : null) || (id.startsWith("bereich:") ? "Prüfbereich " + (((D.bereiche || []).find(b => b.name === id.slice(8)) || {}).anzeige || id.slice(8)) : null) || (PUNKTE.find(p => p.id === id) || {}).name || id;
   const zeile = r => `<li><span class="mono">${esc(r.id in AUTO_NAME || r.id.startsWith("bereich:") ? "" : r.id)}</span><span>${esc(nameVon(r.id))}</span><span class="flags" ${r.ok ? "" : 'style="color:var(--rot)"'}>${esc(r.richtung === "aus" && r.ok && !(r.id in AUTO_NAME) && !r.id.startsWith("bereich:") ? STATUS_TEXT.Zurueckgesetzt
         : r.ok && (r.id in AUTO_NAME || r.id.startsWith("bereich:")) ? (r.richtung === "ein" ? "eingeschaltet und nachgeprüft" : "ausgeschaltet und nachgeprüft") : (STATUS_TEXT[r.status] || r.status))}${(!r.ok || r.status === "Offen") && r.grund ? " – " + esc(r.grund) : ""}</span></li>`;
   const sim = erg.simulation;
@@ -2329,6 +2765,8 @@ async function anwendenImProgramm() {
   const waechterHaelt = !sim && D.installiert && automatikIst("waechter");
   // Erledigte Vormerkungen entfernen (fehlgeschlagene bleiben vorgemerkt)
   for (const r of gut) vorgemerkt.delete(r.id);
+  aktualisiereLeiste();
+  orcaSchwimmt();
   zeigeDialog(`<h2>${sim ? "Simulation abgeschlossen" : schlecht.length ? "Angewendet – mit Hinweisen" : "Geschafft"}</h2>
     <div class="abschluss"><div class="orca-gross klein">${orcaSvg()}</div>
       <p>${sim ? "Es wurde <b>nichts</b> am System verändert. So wäre es gelaufen:" : "Jede Einstellung wurde gesetzt und danach nachgeprüft."}</p></div>
@@ -2340,7 +2778,7 @@ async function anwendenImProgramm() {
     <div class="knoepfe"><button class="knopf voll" data-a="ok">Fertig</button></div>`,
     a => { if (a === "kopieren") kopiere(vorg); neuMessen(); });
   // Orca-Moment: großer Sprung, wenn alles geklappt hat
-  if (!schlecht.length) { const l = document.getElementById("logoOrca"); l.classList.remove("sprung", "hopser"); void l.offsetWidth; l.classList.add("sprung"); }
+  if (!schlecht.length) logoBewegung("sprung", 1500);
 }
 // --- Start ------------------------------------------------------------------
 function kopfDaten() {

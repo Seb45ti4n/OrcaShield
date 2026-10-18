@@ -1,7 +1,7 @@
 ﻿================================================================
   ORCASHIELD
   Datenschutz und Härtung für Windows 11
-  Version 1.0.1 Public Beta
+  Version 1.1.0 Public Beta
 ================================================================
 
   Nimm dir bitte ein paar Minuten für diesen Text. Datenschutz
@@ -52,11 +52,11 @@ was gewollt ist. Deshalb misst es nach, bevor es etwas tut:
      sendet - Telemetrie, Werbe-IDs, Copilot, Recall,
      Standortdaten, Websuche im Startmenü, Sprach- und
      Tippdatensammlung, Geräteinventur und mehr. Dazu
-     verschlüsseltes DNS über Quad9, Schutz vor der Microsoft-Gerätekennung, eine gepflegte Hosts-Datei und ein aufgeräumter Explorer ohne doppelte Laufwerke. 520 Punkte im Katalog, dazu 147 bekannte Optionen ohne Schalter.
+     verschlüsseltes DNS über Quad9, Schutz vor der Microsoft-Gerätekennung, eine gepflegte Hosts-Datei und ein aufgeräumter Explorer ohne doppelte Laufwerke. 521 Punkte im Katalog, dazu 147 bekannte Optionen ohne Schalter.
 
   2. ENTSCHLACKEN
      Es entfernt vorinstallierte Apps, die du nicht brauchst,
-     und räumt anschließend deren Rückstände weg. 37 Apps im
+     und räumt anschließend deren Rückstände weg. 42 Apps im
      Katalog. Kommt eine entfernte App mit einem Update zurück,
      entfernt der Wächter sie erneut - Edge eingeschlossen.
 
@@ -71,6 +71,9 @@ was gewollt ist. Deshalb misst es nach, bevor es etwas tut:
      SSD erfährt, welche Bereiche frei sind. Wann sie die Daten
      dort tatsächlich löscht, entscheidet das Laufwerk selbst.
 
+     Jeder Schritt lässt sich in der App unter Überwachung &
+     Automatik einzeln abschalten; dort steht zu jedem, was er
+     löscht und welche Folge das hat.
      Schattenkopien löscht die Bereinigung nur mit einem eigenen
      Schalter (Vorgabe aus) - das nimmt Wiederherstellungspunkte
      und ältere Dateiversionen endgültig.
@@ -361,7 +364,7 @@ Datei. Neues Jahr, neuer Ordner.
   Sicherheitsgrundlagen (SMB-Signierung, LLMNR aus, NetBIOS aus,
   NTLMv1 aus, LSA-Schutz, kein Autorun).
 
-  MAXIMUM    327 Punkte
+  MAXIMUM    328 Punkte
   Alles, plus die Punkte mit Zielkonflikt: App-Berechtigungen
   bis in die Dateiordner, Defender ohne Cloud-Anbindung,
   Sperre der Edge-Neuinstallation. Die Abschaltung der
@@ -399,7 +402,7 @@ Datei. Neues Jahr, neuer Ordner.
   Sicherheit aus). Sie lassen
   sich nur einzeln einschalten, jeder mit Vorgabe Nein.
 
-  ZUSAMMEN: 520 Einstellungen = 327 in den Stufen + 186 Zusatz
+  ZUSAMMEN: 521 Einstellungen = 328 in den Stufen + 186 Zusatz
   + 7 Experimentell. Die 147 Optionen unter "Nicht unterstützt"
   zählen nicht dazu - OrcaShield setzt sie nicht.
 
@@ -463,7 +466,7 @@ oder PowerShell ihn dort hingeschrieben hat.
 Der Zweig HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\
 Policies\... gehört NICHT dazu. Werte dort sperren nichts.
 
-STAND: Von 520 Punkten liegen 259 im Richtlinienzweig. 21
+STAND: Von 521 Punkten liegen 259 im Richtlinienzweig. 21
 sperren einen sichtbaren Schalter, 16 davon stehen nur unter
 Zusatz. In den Profilen sperren fünf. Die ersten drei haben eine
 nicht sperrende Entsprechung im Katalog, die für dein eigenes

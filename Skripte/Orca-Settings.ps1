@@ -2749,6 +2749,12 @@ $Global:OrcaEinstellungen += New-OrcaSetting -Id 'SYS006' -Name 'Richtlinienerge
     -Hinweis 'Werkzeuge wie gpresult zeigen danach keine Ergebnisse mehr; bei Fehlersuche fehlt diese Auskunft.' `
     -PolicyGrund 'Nur über den Richtlinienzweig belegt (GroupPolicy.admx, Wert 0 = Protokollierung aus).'
 
+$Global:OrcaEinstellungen += New-OrcaSetting -Id 'SYS007' -Name 'Ruhezustand abschalten' `
+    -Kategorie 'Spuren' -Stufe 'Maximum' -Typ 'Registry' -Eingriff 'Leicht' `
+    -Erklaerung 'Windows legt kein Abbild des Arbeitsspeichers mehr auf der Systemplatte ab (Datei hiberfil.sys). Darin stehen sonst Inhalte des Arbeitsspeichers, auch solche, die nur entschlüsselt im Speicher lagen.' `
+    -Pfad 'HKLM:\SYSTEM\CurrentControlSet\Control\Power' -Wert 'HibernateEnabled' -Soll 0 -Standard 1 `
+    -Hinweis 'Kein Ruhezustand und kein Schnellstart mehr - der Rechner fährt ganz herunter und startet etwas langsamer. Wirkt nach einem Neustart.'
+
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'EIN020' -Name 'Keine Auswertung des Tippverhaltens' `
     -Kategorie 'Eingabe' -Stufe 'Standard' -Typ 'Registry' `
     -Erklaerung 'Windows wertet nicht mehr aus, wie du tippst (Tippstatistik und Vorschläge zur Tippgenauigkeit).' `
@@ -2946,6 +2952,39 @@ $Global:OrcaKategorien = @(
     @{ Name = 'Experimentell'; Anzeige = 'Experimentell'; Erklaerung = 'Einstellungen, die den Rechner schneller machen sollen - zum Ausprobieren, jede mit klarer Einstufung.' }
 )
 
+$Global:OrcaBereinigungsSchritte = @(
+    @{ Name = 'papierkorb'; Anzeige = 'Papierkorb leeren'; Vorgabe = $true
+       Erklaerung = 'Leert die Papierkörbe aller Konten auf allen Laufwerken.'
+       Folge = 'Was im Papierkorb lag, lässt sich nach dem Herunterfahren nicht mehr zurückholen.' }
+    @{ Name = 'schattenkopien'; Anzeige = 'Schattenkopien löschen'; Vorgabe = $false
+       Erklaerung = 'Löscht die Schattenkopien von Windows: ältere Fassungen von Dateien, auch gelöschter.'
+       Folge = 'Wiederherstellungspunkte und ältere Dateiversionen sind endgültig weg. Manche Schutzprogramme melden das Löschen, weil Erpressersoftware es auch tut.' }
+    @{ Name = 'miniaturansichten'; Anzeige = 'Miniaturansichten löschen'; Vorgabe = $true
+       Erklaerung = 'Leert den Zwischenspeicher der Vorschaubilder - er enthält Bilder auch von längst gelöschten Dateien.'
+       Folge = 'Der Explorer baut Vorschaubilder beim nächsten Öffnen eines Ordners neu auf, das dauert kurz.' }
+    @{ Name = 'diagnose'; Anzeige = 'Diagnoseprotokolle löschen'; Vorgabe = $true
+       Erklaerung = 'Löscht die von Windows gesammelten Telemetrie-Rohdaten (ETLLogs).'
+       Folge = 'Keine spürbare Folge; Dateien, die Windows gerade benutzt, bleiben liegen.' }
+    @{ Name = 'zuletzt'; Anzeige = 'Zuletzt verwendete Dateien löschen'; Vorgabe = $true
+       Erklaerung = 'Leert die Liste zuletzt geöffneter Dateien und die Sprunglisten. Angeheftete Ordner im Schnellzugriff bleiben.'
+       Folge = 'Zuletzt verwendet im Explorer und die Sprunglisten der Taskleiste sind nach jedem Start leer.' }
+    @{ Name = 'temp'; Anzeige = 'Temporäre Dateien löschen'; Vorgabe = $true
+       Erklaerung = 'Leert die Temp-Ordner aller Konten und von Windows.'
+       Folge = 'Dateien in Benutzung bleiben liegen. Ein Installationsprogramm, das einen Neustart erwartet, findet seine Dateien danach nicht mehr.' }
+    @{ Name = 'absturz'; Anzeige = 'Absturzabbilder löschen'; Vorgabe = $true
+       Erklaerung = 'Löscht Speicherabbilder nach Abstürzen - sie können Inhalte des Arbeitsspeichers enthalten.'
+       Folge = 'Nach einem Absturz fehlt das Abbild für die Fehlersuche, sobald einmal heruntergefahren wurde.' }
+    @{ Name = 'prefetch'; Anzeige = 'Prefetch-Dateien löschen'; Vorgabe = $true
+       Erklaerung = 'Windows merkt sich für jedes gestartete Programm Name, Pfad, Startzeiten und geöffnete Dateien.'
+       Folge = 'Programme starten nach dem Neustart beim ersten Mal etwas langsamer.' }
+    @{ Name = 'explorer'; Anzeige = 'Explorer-Verläufe und Ordneransichten löschen'; Vorgabe = $true
+       Erklaerung = 'Eingetippte Pfade, Ausführen-Befehle, Suchbegriffe, Öffnen- und Speichern-Verläufe und die Ordneransichten (ShellBags), auch von Ordnern auf ausgehängten Laufwerken.'
+       Folge = 'Der Explorer vergisst Sortierung, Spalten und Ansicht je Ordner.' }
+    @{ Name = 'auslagerung'; Anzeige = 'Auslagerungsdatei beim Herunterfahren leeren'; Vorgabe = $true
+       Erklaerung = 'Windows überschreibt die Auslagerungsdatei beim Herunterfahren; darin können Teile des Arbeitsspeichers stehen.'
+       Folge = 'Herunterfahren dauert länger, auf einer SSD entstehen zusätzliche Schreibvorgänge. Wirkt erst nach einem Neustart.' }
+)
+
 # ==============================================================
 #  WÄCHTER-BEREICHE
 #  Was der Wächter nach der Anmeldung prüft. Jeder Bereich lässt
@@ -3086,7 +3125,7 @@ $Global:OrcaBekannt = @(
     @{ Name='Verbindungsprüfung über NlaSvc-Werte'; Kategorie='Netzwerk'; Art='bewusst nicht'; Grund='Abgedeckt durch die belegte Richtlinie NoActiveProbe im Katalog.' }
     @{ Name='Übermittlungsoptimierung pro Konto und für den Netzwerkdienst'; Kategorie='Updates'; Art='bewusst nicht'; Grund='Abgedeckt durch UPD005 für den ganzen Rechner.' }
     @{ Name='Visual Studio: Kundenprogramm, Telemetrie, Feedback, IntelliCode'; Kategorie='Telemetrie'; Art='Wert offen'; Grund='Die Pfade stehen in den Visual-Studio-Programmdateien, der Wertname OptIn nicht; wohin TurnOffSwitch gehört, ist nicht eindeutig; Feedback- und IntelliCode-Werte nicht gefunden.' }
-    @{ Name='NVIDIA-Telemetrie, CCleaner-Datensammlung, Firefox-Telemetrie'; Kategorie='Telemetrie'; Art='Wert offen'; Grund='Die Programme sind auf dem Prüfrechner nicht installiert; die Wertnamen lassen sich so nicht belegen.' }
+    @{ Name='NVIDIA-Telemetrie, CCleaner-Datensammlung, Firefox-Telemetrie'; Kategorie='Telemetrie'; Art='auf diesem Gerät nicht prüfbar'; Grund='Die Programme sind auf dem Prüfrechner nicht installiert; die Wertnamen lassen sich so nicht belegen.' }
     @{ Name='Office 2013 (15.0) und Word: Protokolle, Telemetrie, Feedback'; Kategorie='Office'; Art='Wert offen'; Grund='Für Office 2013 und für Word nicht in den Programmdateien belegt; für Office 16.0 decken OFF004, OFF008, OFF012 und OFF019 bis OFF021 ab.' }
     @{ Name='Neues Outlook nicht automatisch installieren (BlockedOobeUpdaters)'; Kategorie='Office'; Art='Wert offen'; Grund='Ein Listenwert im Windows-Update-Orchestrator ohne Beleg; die App-Entfernung entfernt das neue Outlook.' }
     @{ Name='Internet Explorer: Standort, InPrivate-Protokoll, Kundenprogramm, SSL-3-Rückfall, Zertifikatsfehler'; Kategorie='Explorer'; Art='in diesem Windows entfallen'; Grund='Den Internet Explorer gibt es unter Windows 11 nicht mehr.' }
@@ -3101,7 +3140,7 @@ $Global:OrcaBekannt = @(
     @{ Name='Edge-Updatedienste und -aufgaben abschalten'; Kategorie='Edge'; Art='bewusst nicht'; Grund='Über sie aktualisiert sich auch WebView2, das OrcaShield und viele andere Programme brauchen. Ohne Updates bleiben dort Sicherheitslücken offen.' }
     @{ Name='Netzwerklisten-Dienst und Verbindungsstatus abschalten'; Kategorie='Netzwerk'; Art='bewusst nicht'; Grund='Windows erkennt Netzwerke dann nicht mehr als privat oder öffentlich; die Firewall wendet die falschen Regeln an. Die Verbindungsprüfung schaltet NoActiveProbe im Katalog ab.' }
     @{ Name='Übermittlungsoptimierung und Biometrie als Dienst abschalten'; Kategorie='Updates'; Art='bewusst nicht'; Grund='Abgedeckt durch UPD005 und SEC012, die den belegten Weg nehmen.' }
-    @{ Name='Aufgaben und Dienste von NVIDIA, Firefox, Google, Adobe, Razer, Logitech und Dropbox'; Kategorie='Telemetrie'; Art='Wert offen'; Grund='Die Programme sind auf dem Prüfrechner nicht installiert; Namen und Wirkung lassen sich so nicht belegen.' }
+    @{ Name='Aufgaben und Dienste von NVIDIA, Firefox, Google, Adobe, Razer, Logitech und Dropbox'; Kategorie='Telemetrie'; Art='auf diesem Gerät nicht prüfbar'; Grund='Die Programme sind auf dem Prüfrechner nicht installiert; Namen und Wirkung lassen sich so nicht belegen.' }
     @{ Name='Office-Telemetrie-Aufgaben und Abo-Heartbeat (Office 2013/2016)'; Kategorie='Office'; Art='in diesem Windows entfallen'; Grund='Die Aufgaben gibt es bei aktuellem Office nicht mehr; OFF012 und OFF013 schalten den Telemetrie-Agenten ab.' }
     @{ Name='OneDrive-Aufgaben abschalten'; Kategorie='Konto'; Art='bewusst nicht'; Grund='Die Aufgaben halten OneDrive nur aktuell. OrcaShield entfernt OneDrive nicht, sondern schaltet Telemetrie, Netzverkehr vor der Anmeldung und Autostart ab (KTO003, KTO006, KTO007).' }
     @{ Name='Fehlerdetails-Update, SMBv1-Treiber, System Guard, Datenverlust-Schutz'; Kategorie='Sicherheit'; Art='in diesem Windows entfallen'; Grund='Die Aufgabe bzw. die Dienste gibt es auf diesem Windows nicht; SMBv1 entfernt SEC001.' }
@@ -3118,11 +3157,11 @@ $Global:OrcaBekannt = @(
     @{ Name='Höchste erlaubte Diagnosestufe und Hinweis zur Diagnosestufe'; Kategorie='Telemetrie'; Art='bewusst nicht'; Grund='Abgedeckt durch TEL025 und TEL001.' }
     @{ Name='Recall: Schnappschüsse nicht speichern (TurnOffSavingSnapshots)'; Kategorie='KI-Funktionen'; Art='in diesem Windows entfallen'; Grund='Ältere Richtlinie, in den aktuellen Vorlagen ersetzt durch DisableAIDataAnalysis (KI003, KI012).' }
     @{ Name='KI-Dienst nur bei Bedarf starten (WSAIFabricSvc)'; Kategorie='KI-Funktionen'; Art='Wert offen'; Grund='Der Dienst ist nicht belegt; Recall und die KI-Funktionen schalten KI003 bis KI012 ab.' }
-    @{ Name='Chrome und Brave: KI- und Zusatzfunktionen'; Kategorie='Edge'; Art='Wert offen'; Grund='Die Browser sind auf dem Prüfrechner nicht installiert; die Richtlinien lassen sich so nicht belegen.' }
+    @{ Name='Chrome und Brave: KI- und Zusatzfunktionen'; Kategorie='Edge'; Art='auf diesem Gerät nicht prüfbar'; Grund='Die Browser sind auf dem Prüfrechner nicht installiert; die Richtlinien lassen sich so nicht belegen.' }
     @{ Name='Edge: lokale KI-Modelle, Copilot-Symbol und -Seitenzugriff, KI-Verlaufssuche, Spendenhinweis'; Kategorie='Edge'; Art='Wert offen'; Grund='Richtliniennamen nicht in den Edge-Programmdateien gefunden.' }
     @{ Name='Paint: KI-Funktionen, Phone Link im Startmenü'; Kategorie='KI-Funktionen'; Art='Wert offen'; Grund='Die Apps liegen in einem geschützten Ordner; die Wertnamen lassen sich nicht belegen.' }
     @{ Name='Letzten Dateizugriff nicht mehr vermerken (NTFS)'; Kategorie='Spuren'; Art='Wert offen'; Grund='Der Wert liegt außerhalb dessen, was OrcaShield sicher setzen und nachprüfen kann. Von Hand: fsutil behavior set disablelastaccess 1.' }
-    @{ Name='Telemetrie von PowerShell 7'; Kategorie='Telemetrie'; Art='Wert offen'; Grund='PowerShell 7 ist auf dem Prüfrechner nicht installiert. Windows PowerShell 5.1 sendet keine Telemetrie.' }
+    @{ Name='Telemetrie von PowerShell 7'; Kategorie='Telemetrie'; Art='auf diesem Gerät nicht prüfbar'; Grund='PowerShell 7 ist auf dem Prüfrechner nicht installiert. Windows PowerShell 5.1 sendet keine Telemetrie.' }
     @{ Name='Alle Schutzmaßnahmen gegen Angriffe abschalten, Netzwerkbindungen lösen, Zeitdienst umstellen'; Kategorie='Sicherheit'; Art='bewusst nicht'; Grund='Schaltet Dutzende Schutzmaßnahmen auf einmal ab bzw. bricht Dateifreigabe und Zeitabgleich; nicht einzeln nachprüfbar.' }
     @{ Name='Game-Bar-Verknüpfungen umleiten'; Kategorie='Gaming'; Art='bewusst nicht'; Grund='Verbiegt Systemverknüpfungen; die Game Bar entfernt die App-Entfernung.' }
     @{ Name='Einmalige Aktionen eines Installationspakets (Designs, Energiepläne, Dateizuordnungen, Leistungszähler, Startmenü-Layout)'; Kategorie='Explorer'; Art='bewusst nicht'; Grund='Gehören zur Einrichtung eines eigenen Windows-Abbilds, nicht zu einer Einstellung, die sich halten und zurücknehmen lässt.' }

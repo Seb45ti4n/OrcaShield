@@ -2329,7 +2329,7 @@ $Global:OrcaHostsGeschuetzt = @('localhost', 'localhost.localdomain', 'local', '
 $Global:OrcaHostsZeile   = '^\s*(0\.0\.0\.0|127\.0\.0\.1|::|0:0:0:0:0:0:0:0)\s+(\S+)\s*$'
 
 function Get-OrcaHostsListe {
-    param([Parameter(Mandatory)][string]$Abschnitt)
+    param([Parameter(Mandatory)][string]$Abschnitt, [switch]$Roh)
     if (-not $Global:OrcaHostsCache) {
         $tab = @{}
         $aktuell = $null
@@ -2341,8 +2341,40 @@ function Get-OrcaHostsListe {
         }
         $Global:OrcaHostsCache = $tab
     }
-    if ($Global:OrcaHostsCache.ContainsKey($Abschnitt)) { return ,@($Global:OrcaHostsCache[$Abschnitt]) }
-    return ,@()
+    if (-not $Global:OrcaHostsCache.ContainsKey($Abschnitt)) { return ,@() }
+    $liste = @($Global:OrcaHostsCache[$Abschnitt])
+    if (-not $Roh) {
+        $aus = Get-OrcaHostsAusnahmen
+        if ($aus.Count) { $liste = @($liste | Where-Object { $_ -notin $aus }) }
+    }
+    return ,$liste
+}
+
+function Get-OrcaHostsAusnahmen {
+    if ($null -eq $Global:OrcaHostsAusnahmenCache) {
+        $st = Get-OrcaState
+        $aus = New-Object System.Collections.ArrayList
+        if ($st -and $st.HostsAusnahmen) { foreach ($h in @($st.HostsAusnahmen)) { [void]$aus.Add(([string]$h).ToLower()) } }
+        $Global:OrcaHostsAusnahmenCache = $aus
+    }
+    return ,@($Global:OrcaHostsAusnahmenCache)
+}
+
+function Get-OrcaHostsAlleNamen {
+    $alle = New-Object System.Collections.ArrayList
+    foreach ($ab in $Global:OrcaHostsFolge) { foreach ($n in (Get-OrcaHostsListe -Abschnitt $ab -Roh)) { [void]$alle.Add($n) } }
+    return ,@($alle)
+}
+
+function Set-OrcaHostsAusnahmen {
+    # Nur Namen, die in Orca-Hosts.txt stehen. Rückgabe: $true, wenn gespeichert.
+    param([string[]]$Namen = @())
+    $bekannt = Get-OrcaHostsAlleNamen
+    $neu = @($Namen | Where-Object { $_ } | ForEach-Object { $_.ToLower() } | Where-Object { $_ -in $bekannt } | Sort-Object -Unique)
+    $ok = Set-OrcaStateFeld -Name 'HostsAusnahmen' -Wert @($neu)
+    $Global:OrcaHostsAusnahmenCache = $null
+    $Global:OrcaHostsAbschnitteCache = $null
+    return $ok
 }
 
 function Get-OrcaHostsKennung {
@@ -2504,7 +2536,7 @@ function Write-OrcaHosts {
     $ablage = Join-Path $Global:OrcaBackup 'Hosts-uebernommen.txt'
     if ($Zurueck -and (Test-Path -LiteralPath $ablage)) {
         $liste = New-Object 'System.Collections.Generic.HashSet[string]'
-        foreach ($n in (Get-OrcaHostsListe -Abschnitt $Zurueck)) { [void]$liste.Add($n) }
+        foreach ($n in (Get-OrcaHostsListe -Abschnitt $Zurueck -Roh)) { [void]$liste.Add($n) }
         $vorhanden = New-Object 'System.Collections.Generic.HashSet[string]'
         foreach ($l in $behalten) { [void]$vorhanden.Add($l.Trim()) }
         $rueck = @(Get-Content -LiteralPath $ablage -Encoding UTF8 | Where-Object {
@@ -2628,7 +2660,15 @@ function Get-OrcaGdidStand {
 }
 
 function Invoke-OrcaGdidBereinigung {
-    # Rückgabe: @{ Erfolg; Grund; Schritte = @() }
+    param(
+        [string[]]$Orte = @($Global:OrcaGdidOrte | ForEach-Object { $_.Name }),
+        [bool]$Zwischenspeicher = $true,
+        [bool]$Zugangsdaten = $true
+    )
+    $orteListe = @($Global:OrcaGdidOrte | Where-Object { $_.Name -in $Orte })
+    if ($orteListe.Count -eq 0 -and -not $Zwischenspeicher -and -not $Zugangsdaten) {
+        return @{ Erfolg = $false; Schritte = @(); Grund = 'Nichts ausgewählt' }
+    }
     $schritte = @()
     $netz = (Get-OrcaHostsAbschnitte)['GDID']
     if (-not $netz.Intakt) {
@@ -2644,42 +2684,48 @@ function Invoke-OrcaGdidBereinigung {
     $schritte += "Dienste angehalten: $(@($dienste | ForEach-Object { $_.Name }) -join ', ')"
 
     try {
-        foreach ($o in $Global:OrcaGdidOrte) {
+        foreach ($o in $orteListe) {
             Remove-OrcaRegWert -Pfad "$($o.Pfad)\ExtendedProperties" -Name 'LID' | Out-Null
             $prop = "$($o.Pfad)\Immersive\production\Property"
             $k = Get-OrcaRegSchluessel -Pfad $prop
             foreach ($n in @($k.Werte.Keys)) { Remove-OrcaRegWert -Pfad $prop -Name $n | Out-Null }
             foreach ($n in @('DeviceId', 'DeviceTicket')) { Remove-OrcaRegWert -Pfad "$($o.Pfad)\Immersive\production\Token" -Name $n | Out-Null }
         }
-        $schritte += 'Kennung und Gerätetoken aus Registry entfernt (Benutzer, Vorlage, Systemkonto)'
+        if ($orteListe.Count) { $schritte += "Kennung und Gerätetoken aus Registry entfernt ($(@($orteListe | ForEach-Object { $_.Name }) -join ', '))" }
 
-        $neg = 'HKLM:\SOFTWARE\Microsoft\IdentityCRL\NegativeCache'
-        foreach ($k in @(Get-ChildItem -LiteralPath $neg -ErrorAction SilentlyContinue)) {
-            if ($k.PSChildName -match '0018[0-9A-Fa-f]{12}') { Remove-Item -LiteralPath $k.PSPath -Recurse -Force -ErrorAction SilentlyContinue }
-        }
-        foreach ($rel in @('Microsoft\TokenBroker\Cache', 'ConnectedDevicesPlatform')) {
-            $p = Join-Path $env:LOCALAPPDATA $rel
-            if ((Test-Path -LiteralPath $p) -and (Test-OrcaWegSicher -Wurzel $env:LOCALAPPDATA -Pfad $p)) {
-                foreach ($x in @(Get-ChildItem -LiteralPath $p -Force -ErrorAction SilentlyContinue)) {
-                    [void](Remove-OrcaPfadSicher -Wurzel $p -Pfad $x.FullName)
+        if ($Zwischenspeicher) {
+            $neg = 'HKLM:\SOFTWARE\Microsoft\IdentityCRL\NegativeCache'
+            foreach ($k in @(Get-ChildItem -LiteralPath $neg -ErrorAction SilentlyContinue)) {
+                if ($k.PSChildName -match '0018[0-9A-Fa-f]{12}') { Remove-Item -LiteralPath $k.PSPath -Recurse -Force -ErrorAction SilentlyContinue }
+            }
+            foreach ($rel in @('Microsoft\TokenBroker\Cache', 'ConnectedDevicesPlatform')) {
+                $p = Join-Path $env:LOCALAPPDATA $rel
+                if ((Test-Path -LiteralPath $p) -and (Test-OrcaWegSicher -Wurzel $env:LOCALAPPDATA -Pfad $p)) {
+                    foreach ($x in @(Get-ChildItem -LiteralPath $p -Force -ErrorAction SilentlyContinue)) {
+                        [void](Remove-OrcaPfadSicher -Wurzel $p -Pfad $x.FullName)
+                    }
                 }
             }
+            $schritte += 'Token-Zwischenspeicher geleert'
         }
-        $schritte += 'Token-Zwischenspeicher geleert'
 
-        # Gespeicherte Microsoft-Konto-Zugangsdaten
-        $liste = cmdkey /list 2>&1 | Out-String
-        $ziele = @([regex]::Matches($liste, '(?im)^\s*(?:Ziel|Target):\s*(?:LegacyGeneric:target=)?(\S*MicrosoftAccount\S*)') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
-        foreach ($z in $ziele) { Invoke-OrcaProgramm -Datei 'cmdkey.exe' -Argumente "/delete:$z" | Out-Null }
-        $schritte += "Microsoft-Konto-Zugangsdaten entfernt: $($ziele.Count)"
+        if ($Zugangsdaten) {
+            # Gespeicherte Microsoft-Konto-Zugangsdaten
+            $liste = cmdkey /list 2>&1 | Out-String
+            $ziele = @([regex]::Matches($liste, '(?im)^\s*(?:Ziel|Target):\s*(?:LegacyGeneric:target=)?(\S*MicrosoftAccount\S*)') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+            foreach ($z in $ziele) { Invoke-OrcaProgramm -Datei 'cmdkey.exe' -Argumente "/delete:$z" | Out-Null }
+            $schritte += "Microsoft-Konto-Zugangsdaten entfernt: $($ziele.Count)"
+        }
     }
     finally {
         foreach ($n in $liefen) { Start-Service -Name $n -ErrorAction SilentlyContinue }
     }
 
+    # Erfolg = an den gewählten Orten liegt keine echte Kennung mehr
     $nachher = Get-OrcaGdidStand
-    $ok = ($nachher.Echt -eq 0)
-    $grund = if ($ok) { '' } else { "weiterhin vorhanden: $($nachher.Orte -join ', ')" }
+    $rest = @($nachher.Orte | Where-Object { $_ -in @($orteListe | ForEach-Object { $_.Name }) })
+    $ok = ($rest.Count -eq 0)
+    $grund = if ($ok) { '' } else { "weiterhin vorhanden: $($rest -join ', ')" }
     Write-OrcaLog -Level $(if ($ok) { 'OK' } else { 'FEHLER' }) -Source 'GDID' `
         -Message "Bereinigung der Gerätekennung: $(if ($ok) { 'keine echte Kennung mehr vorhanden' } else { $grund })"
     return @{ Erfolg = $ok; Grund = $grund; Schritte = $schritte }

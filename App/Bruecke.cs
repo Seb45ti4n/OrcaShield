@@ -42,8 +42,11 @@ namespace OrcaShield
                 ["sammler"] = Sammler,
                 ["geraetekennung"] = Geraetekennung,
                 ["apps"] = Apps,
+                ["appsZurueck"] = AppsZurueck,
+                ["hosts"] = Hosts,
                 ["richtlinie"] = Richtlinie,
                 ["sprache"] = Sprache,
+                ["orca"] = (id, d) => { _ui.BeginInvoke(new Action(() => OrcaFenster.Zeigen(_ui))); return Task.FromResult("true"); },
             };
             _kern.WebMessageReceived += Empfangen;
         }
@@ -193,15 +196,21 @@ namespace OrcaShield
                                              string[] sammler, string sammlerRichtung,
                                              string[] apps = null, bool geraetekennung = false,
                                              string[] richtlinien = null, string richtlinienRichtung = "",
-                                             string aufnehmenArt = "", int aufnehmenAnzahl = 0, bool aufnehmenAlle = false)
+                                             string aufnehmenArt = "", int aufnehmenAnzahl = 0, bool aufnehmenAlle = false,
+                                             string[] gdidOrte = null, bool gdidZwischenspeicher = true, bool gdidZugangsdaten = true,
+                                             string[] hostsAusnehmen = null, string[] hostsSperren = null, string[] appsZurueck = null)
         {
             var v = new Dictionary<string, object>
             {
+                ["OrcaGdidWahl"] = gdidOrte ?? new string[0], ["OrcaGdidZw"] = gdidZwischenspeicher, ["OrcaGdidZd"] = gdidZugangsdaten,
+                ["OrcaHostsAus"] = hostsAusnehmen ?? new string[0], ["OrcaHostsEin"] = hostsSperren ?? new string[0],
+                ["OrcaAppsZurueck"] = appsZurueck ?? new string[0],
                 ["OrcaAufArt"] = aufnehmenArt ?? "", ["OrcaAufAnzahl"] = aufnehmenAnzahl, ["OrcaAufAlle"] = aufnehmenAlle,
                 ["OrcaRichtlinien"] = richtlinien ?? new string[0], ["OrcaRichtlinienRichtung"] = richtlinienRichtung ?? "",
                 ["OrcaEin"] = ein ?? new string[0], ["OrcaAus"] = aus ?? new string[0],
                 ["OrcaW"] = auto?.Waechter ?? "", ["OrcaB"] = auto?.Bereinigung ?? "", ["OrcaSk"] = auto?.Schattenkopien ?? "",
                 ["OrcaBAus"] = auto?.BereicheAus ?? new string[0], ["OrcaBAn"] = auto?.BereicheAn ?? new string[0],
+                ["OrcaSchrAus"] = auto?.SchritteAus ?? new string[0], ["OrcaSchrAn"] = auto?.SchritteAn ?? new string[0],
                 ["OrcaSammler"] = sammler ?? new string[0], ["OrcaSammlerRichtung"] = sammlerRichtung ?? "",
                 // Nicht „OrcaApps“: so heißt der App-Katalog der Engine ($Global:OrcaApps) – Engine.cs weist das ab
                 ["OrcaAppKennungen"] = apps ?? new string[0], ["OrcaGdid"] = geraetekennung,
@@ -209,9 +218,11 @@ namespace OrcaShield
             };
             var erg = await _engine.AufrufenAsync(
                 "ConvertTo-OrcaGuiJson -Daten (Get-OrcaGuiBestaetigung -Ein $OrcaEin -Aus $OrcaAus -Waechter $OrcaW -Bereinigung $OrcaB -Schattenkopien $OrcaSk " +
-                "-BereicheAus $OrcaBAus -BereicheAn $OrcaBAn -Sammler $OrcaSammler -SammlerRichtung $OrcaSammlerRichtung -Apps $OrcaAppKennungen -Geraetekennung:$OrcaGdid " +
+                "-BereicheAus $OrcaBAus -BereicheAn $OrcaBAn -SchritteAus $OrcaSchrAus -SchritteAn $OrcaSchrAn -Sammler $OrcaSammler -SammlerRichtung $OrcaSammlerRichtung -Apps $OrcaAppKennungen -Geraetekennung:$OrcaGdid " +
                 "-Richtlinien $OrcaRichtlinien -RichtlinienRichtung $OrcaRichtlinienRichtung " +
-                "-AufnehmenArt $OrcaAufArt -AufnehmenAnzahl $OrcaAufAnzahl -AufnehmenAlle:$OrcaAufAlle -Sprache $OrcaSprache)",
+                "-AufnehmenArt $OrcaAufArt -AufnehmenAnzahl $OrcaAufAnzahl -AufnehmenAlle:$OrcaAufAlle -Sprache $OrcaSprache " +
+                "-GdidOrte $OrcaGdidWahl -GdidZwischenspeicher $OrcaGdidZw -GdidZugangsdaten $OrcaGdidZd " +
+                "-HostsAusnehmen $OrcaHostsAus -HostsSperren $OrcaHostsEin -AppsZurueck $OrcaAppsZurueck)",
                 v, null);
             if (erg.Count == 0 || !(erg[erg.Count - 1] is string json)) throw new InvalidOperationException("Rückfrage lieferte keine Liste");
             var d = _json.Deserialize<Dictionary<string, object>>(json);
@@ -227,9 +238,10 @@ namespace OrcaShield
             _rueckfrageOffen = true;
             try
             {
+                int anzahl = zeilen.Count(z => !z.StartsWith("   ", StringComparison.Ordinal));
                 string kopf = _englisch
-                    ? (zeilen.Count == 1 ? "This change will be made now:" : $"These {zeilen.Count} changes will be made now:")
-                    : (zeilen.Count == 1 ? "Diese Änderung wird jetzt ausgeführt:" : $"Diese {zeilen.Count} Änderungen werden jetzt ausgeführt:");
+                    ? (anzahl == 1 ? "This change will be made now:" : $"These {anzahl} changes will be made now:")
+                    : (anzahl == 1 ? "Diese Änderung wird jetzt ausgeführt:" : $"Diese {anzahl} Änderungen werden jetzt ausgeführt:");
                 bool ja = Bestaetigung.Fragen(_ui, _engine.Simulation, kopf, zeilen, risiken, _englisch);
                 _protokoll($"Rückfrage {was}: {(ja ? "bestätigt" : "abgelehnt")} ({zeilen.Count} Änderungen, {risiken.Count} Risiken)");
                 return ja;
@@ -265,8 +277,9 @@ namespace OrcaShield
         private sealed class AutomatikAuftrag
         {
             public string Waechter, Bereinigung, Schattenkopien;
-            public string[] BereicheAus, BereicheAn;
-            public bool Leer => Waechter == "" && Bereinigung == "" && Schattenkopien == "" && BereicheAus.Length == 0 && BereicheAn.Length == 0;
+            public string[] BereicheAus, BereicheAn, SchritteAus, SchritteAn;
+            public bool Leer => Waechter == "" && Bereinigung == "" && Schattenkopien == "" && BereicheAus.Length == 0 && BereicheAn.Length == 0
+                                && SchritteAus.Length == 0 && SchritteAn.Length == 0;
         }
 
         private static AutomatikAuftrag AutomatikLesen(Dictionary<string, object> daten) => new AutomatikAuftrag
@@ -276,6 +289,8 @@ namespace OrcaShield
             Schattenkopien = Schalter(daten, "schattenkopien"),
             BereicheAus = Bereiche(daten, "bereicheAus"),
             BereicheAn = Bereiche(daten, "bereicheAn"),
+            SchritteAus = Bereiche(daten, "schritteAus"),
+            SchritteAn = Bereiche(daten, "schritteAn"),
         };
 
         private async Task<string> Automatik(int id, Dictionary<string, object> daten)
@@ -292,8 +307,8 @@ namespace OrcaShield
         {
             _protokoll((_engine.Simulation ? "Simulation: " : "") + $"automatik Wächter '{a.Waechter}', Bereinigung '{a.Bereinigung}', Schattenkopien '{a.Schattenkopien}', Bereiche aus {a.BereicheAus.Length}, ein {a.BereicheAn.Length}");
             var erg = await _engine.AufrufenAsync(
-                "ConvertTo-OrcaGuiJson -Daten (Invoke-OrcaGuiAutomatik -Waechter $OrcaW -Bereinigung $OrcaB -Schattenkopien $OrcaSk -BereicheAus $OrcaAus -BereicheAn $OrcaAn)",
-                new Dictionary<string, object> { ["OrcaW"] = a.Waechter, ["OrcaB"] = a.Bereinigung, ["OrcaSk"] = a.Schattenkopien, ["OrcaAus"] = a.BereicheAus, ["OrcaAn"] = a.BereicheAn },
+                "ConvertTo-OrcaGuiJson -Daten (Invoke-OrcaGuiAutomatik -Waechter $OrcaW -Bereinigung $OrcaB -Schattenkopien $OrcaSk -BereicheAus $OrcaAus -BereicheAn $OrcaAn -SchritteAus $OrcaSchrAus -SchritteAn $OrcaSchrAn)",
+                new Dictionary<string, object> { ["OrcaW"] = a.Waechter, ["OrcaB"] = a.Bereinigung, ["OrcaSk"] = a.Schattenkopien, ["OrcaAus"] = a.BereicheAus, ["OrcaAn"] = a.BereicheAn, ["OrcaSchrAus"] = a.SchritteAus, ["OrcaSchrAn"] = a.SchritteAn },
                 (prozent, text) => Fortschritt(id, prozent, text));
             if (erg.Count == 0 || !(erg[erg.Count - 1] is string json)) throw new InvalidOperationException("Automatik lieferte kein Ergebnis");
             return json;
@@ -358,11 +373,28 @@ namespace OrcaShield
             return json;
         }
 
+        private static readonly string[] GdidOrte = { "dein Profil", "Vorlageprofil", "Systemkonto" };
         private async Task<string> Geraetekennung(int id, Dictionary<string, object> daten)
         {
-            if (!await Bestaetigen("geraetekennung", null, null, null, null, null, geraetekennung: true)) return Abgelehnt();
-            _protokoll((_engine.Simulation ? "Simulation: " : "") + "Gerätekennung entfernen");
-            var erg = await _engine.AufrufenAsync("ConvertTo-OrcaGuiJson -Daten (Invoke-OrcaGuiGeraetekennung)", null,
+            var orte = new List<string>(GdidOrte);
+            if (daten.TryGetValue("orte", out var roh) && roh != null)
+            {
+                if (!(roh is System.Collections.IEnumerable liste) || roh is string) throw new InvalidDataException("Feld 'orte' ist keine Liste");
+                orte.Clear();
+                foreach (var x in liste)
+                {
+                    if (!(x is string s) || Array.IndexOf(GdidOrte, s) < 0) throw new InvalidDataException("Unbekannter Ort");
+                    if (!orte.Contains(s)) orte.Add(s);
+                }
+            }
+            bool Wahr(string feld) => !daten.TryGetValue(feld, out var w) || w == null || (w is bool b ? b : throw new InvalidDataException("Feld '" + feld + "' muss true oder false sein"));
+            bool zw = Wahr("zwischenspeicher"), zd = Wahr("zugangsdaten");
+            if (orte.Count == 0 && !zw && !zd) throw new InvalidDataException("Nichts ausgewählt");
+            if (!await Bestaetigen("geraetekennung", null, null, null, null, null, geraetekennung: true,
+                                   gdidOrte: orte.ToArray(), gdidZwischenspeicher: zw, gdidZugangsdaten: zd)) return Abgelehnt();
+            _protokoll((_engine.Simulation ? "Simulation: " : "") + $"Gerätekennung entfernen: {string.Join(", ", orte)}{(zw ? ", Zwischenspeicher" : "")}{(zd ? ", Zugangsdaten" : "")}");
+            var erg = await _engine.AufrufenAsync("ConvertTo-OrcaGuiJson -Daten (Invoke-OrcaGuiGeraetekennung -Orte $OrcaOrte -Zwischenspeicher $OrcaZw -Zugangsdaten $OrcaZd)",
+                new Dictionary<string, object> { ["OrcaOrte"] = orte.ToArray(), ["OrcaZw"] = zw, ["OrcaZd"] = zd },
                 (prozent, text) => Fortschritt(id, prozent, text));
             if (erg.Count == 0 || !(erg[erg.Count - 1] is string json)) throw new InvalidOperationException("Gerätekennung lieferte kein Ergebnis");
             if (_engine.Simulation) SimulationAblegen(json);
@@ -390,6 +422,55 @@ namespace OrcaShield
                 new Dictionary<string, object> { ["OrcaIds"] = ids.ToArray() },
                 (prozent, text) => Fortschritt(id, prozent, text));
             if (erg.Count == 0 || !(erg[erg.Count - 1] is string json)) throw new InvalidOperationException("Apps lieferte kein Ergebnis");
+            if (_engine.Simulation) SimulationAblegen(json);
+            return json;
+        }
+
+        private async Task<string> AppsZurueck(int id, Dictionary<string, object> daten)
+        {
+            if (!daten.TryGetValue("ids", out var roh) || !(roh is System.Collections.IEnumerable liste) || roh is string)
+                throw new InvalidDataException("Feld 'ids' ist keine Liste");
+            var ids = new List<string>();
+            foreach (var x in liste)
+            {
+                if (!(x is string s) || !AppMuster.IsMatch(s)) throw new InvalidDataException("Ungültige App-Kennung");
+                if (!ids.Contains(s)) ids.Add(s);
+                if (ids.Count > 100) throw new InvalidDataException("Zu viele Apps");
+            }
+            if (ids.Count == 0) throw new InvalidDataException("Nichts ausgewählt");
+            if (!await Bestaetigen("appsZurueck", null, null, null, null, null, appsZurueck: ids.ToArray())) return Abgelehnt();
+            _protokoll((_engine.Simulation ? "Simulation: " : "") + "Apps wieder installieren: " + string.Join(", ", ids));
+            var erg = await _engine.AufrufenAsync("ConvertTo-OrcaGuiJson -Daten (Invoke-OrcaGuiAppsZurueck -Ids $OrcaIds)",
+                new Dictionary<string, object> { ["OrcaIds"] = ids.ToArray() }, (prozent, text) => Fortschritt(id, prozent, text));
+            if (erg.Count == 0 || !(erg[erg.Count - 1] is string json)) throw new InvalidOperationException("Apps lieferte kein Ergebnis");
+            if (_engine.Simulation) SimulationAblegen(json);
+            return json;
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex HostMuster =
+            new System.Text.RegularExpressions.Regex("^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$");
+        private async Task<string> Hosts(int id, Dictionary<string, object> daten)
+        {
+            string[] Namen(string feld)
+            {
+                if (!daten.TryGetValue(feld, out var roh) || roh == null) return new string[0];
+                if (!(roh is System.Collections.IEnumerable liste) || roh is string) throw new InvalidDataException("Feld '" + feld + "' ist keine Liste");
+                var aus = new List<string>();
+                foreach (var x in liste)
+                {
+                    if (!(x is string s) || !HostMuster.IsMatch(s)) throw new InvalidDataException("Ungültiger Hostname");
+                    if (!aus.Contains(s)) aus.Add(s);
+                }
+                return aus.ToArray();
+            }
+            var aus = Namen("ausnehmen"); var ein = Namen("sperren");
+            if (aus.Length + ein.Length == 0) throw new InvalidDataException("Nichts ausgewählt");
+            if (aus.Length + ein.Length > 500) throw new InvalidDataException("Zu viele Einträge");
+            if (!await Bestaetigen("hosts", null, null, null, null, null, hostsAusnehmen: aus, hostsSperren: ein)) return Abgelehnt();
+            _protokoll((_engine.Simulation ? "Simulation: " : "") + $"hosts ausnehmen {aus.Length}, sperren {ein.Length}");
+            var erg = await _engine.AufrufenAsync("ConvertTo-OrcaGuiJson -Daten (Invoke-OrcaGuiHosts -Ausnehmen $OrcaAus -Sperren $OrcaEin)",
+                new Dictionary<string, object> { ["OrcaAus"] = aus, ["OrcaEin"] = ein }, (prozent, text) => Fortschritt(id, prozent, text));
+            if (erg.Count == 0 || !(erg[erg.Count - 1] is string json)) throw new InvalidOperationException("Hosts lieferte kein Ergebnis");
             if (_engine.Simulation) SimulationAblegen(json);
             return json;
         }
@@ -428,11 +509,15 @@ namespace OrcaShield
         private static readonly HashSet<string> ErlaubteLinks = new HashSet<string>(StringComparer.Ordinal)
         {
             "https://github.com/Seb45ti4n/OrcaShield",
+            "https://librewolf.net", "https://protonvpn.com", "https://telegram.org", "https://www.videolan.org/vlc/",
+            "https://notepad-plus-plus.org", "https://rufus.ie", "https://veracrypt.fr", "https://www.revouninstaller.com",
         };
+        private static readonly System.Text.RegularExpressions.Regex StoreLink =
+            new System.Text.RegularExpressions.Regex(@"^ms-windows-store://pdp/\?PFN=[A-Za-z0-9.\-]{3,100}_[a-z0-9]{13}$");
         private Task<string> Oeffnen(int id, Dictionary<string, object> daten)
         {
             string url = daten.TryGetValue("url", out var u) ? u as string : null;
-            if (url == null || !ErlaubteLinks.Contains(url)) throw new InvalidDataException("Diese Adresse ist nicht freigegeben");
+            if (url == null || !(ErlaubteLinks.Contains(url) || StoreLink.IsMatch(url))) throw new InvalidDataException("Diese Adresse ist nicht freigegeben");
             // Nicht direkt starten: OrcaShield läuft als Administrator, der Browser liefe dann
             // ebenfalls erhöht. Der Explorer öffnet die Adresse im Browser des normalen Kontos.
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(

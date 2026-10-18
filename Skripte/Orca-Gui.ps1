@@ -107,10 +107,13 @@ function Get-OrcaGuiDaten {
         aufgabe  = $Global:OrcaAufgabeWaechter
         bereinigungAktiv = $(if ($st) { [bool]$st.BereinigungAktiv } else { $false })
         schattenkopienAktiv = $(if ($st) { [bool]$st.SchattenkopienLoeschen } else { $false })
+        bereinigungSchritte = @($Global:OrcaBereinigungsSchritte | ForEach-Object {
+            $an = if ($_.Name -eq 'schattenkopien') { [bool]($st -and $st.SchattenkopienLoeschen) } else { -not ($st -and $_.Name -in @($st.BereinigungAus)) }
+            [ordered]@{ name = $_.Name; anzeige = $_.Anzeige; erklaerung = $_.Erklaerung; folge = $_.Folge; an = $an } })
         waechterAktiv = [bool](Get-OrcaWaechterAufgabe).Aktiv
         gemessen = (Get-Date -Format 'dd.MM.yyyy HH:mm')
         system   = "$($ed.Anzeige) · $($ed.Kanon) · Build $($ed.Build)"
-        installiert = $(if ($st) { "$($st.Version)" } else { '' })
+        installiert = $(if ($st) { if ($st.Version) { "$($st.Version)" } else { 'ja' } } else { '' })
         waechter    = $(if ($st) { & $zeit $st.LetzterWaechterlauf } else { '' })
         shutdown    = $(if ($st) { & $zeit $st.LetzterShutdownlauf } else { '' })
         shutdownErgebnis = $(if ($st) { "$($st.LetzterShutdownErgebnis)" } else { '' })
@@ -132,6 +135,7 @@ function Get-OrcaGuiDaten {
             [ordered]@{ schluessel = $_.Schluessel; anzeige = "$($_.Pfad)\$($_.Name)"; seit = (& $zeit $_.Seit) } })
         geraetekennung = (Get-OrcaGuiGeraetekennung)
         apps = (Get-OrcaGuiApps)
+        hosts = (Get-OrcaGuiHosts)
         # Katalogtexte deutsch -> englisch; die Oberfläche übersetzt damit, wenn Englisch gewählt ist
         texteEn = $Global:OrcaTexteEN
     }
@@ -148,18 +152,69 @@ function Get-OrcaGuiGeraetekennung {
 }
 
 function Invoke-OrcaGuiGeraetekennung {
-    # Entfernt die gespeicherte Gerätekennung (Aktion "geraetekennung").
-    # Invoke-OrcaGdidBereinigung prüft selbst, dass NET005 steht, und meldet
-    # Erfolg nur, wenn danach keine echte Kennung mehr gespeichert ist.
+    param([string[]]$Orte = @($Global:OrcaGdidOrte | ForEach-Object { $_.Name }), [bool]$Zwischenspeicher = $true, [bool]$Zugangsdaten = $true)
     $sim = [bool]$Global:OrcaSimulationAktiv
     Write-Progress -Activity 'Gerätekennung' -Status 'Entfernen' -PercentComplete 30
     $r = $null
-    try { $r = Invoke-OrcaGdidBereinigung }
+    try { $r = Invoke-OrcaGdidBereinigung -Orte $Orte -Zwischenspeicher $Zwischenspeicher -Zugangsdaten $Zugangsdaten }
     catch { $r = @{ Erfolg = $false; Grund = $_.Exception.Message; Schritte = @() } }
     Write-Progress -Activity 'Gerätekennung' -Completed
     $punkt = [ordered]@{ id = 'geraetekennung'; richtung = 'ein'; ok = [bool]$r.Erfolg
                          status = $(if ($r.Erfolg) { 'Gesetzt' } else { 'Fehler' }); grund = "$($r.Grund)"; schritte = @($r.Schritte) }
     return [ordered]@{ simulation = $sim; abgebrochen = ''; punkte = @($punkt); vorgaenge = @(Get-OrcaGuiVorgaenge) }
+}
+
+function Get-OrcaGuiHosts {
+    # Liest nur. Je Abschnitt: Katalogpunkt, ob er steht, alle Namen; dazu die Ausnahmen
+    # und wie viele Zeilen die Hosts-Datei mit allen Abschnitten bekäme (gezählt, nicht geschätzt).
+    $stand = @{}
+    try { $stand = Get-OrcaHostsAbschnitte } catch { }
+    $aus = Get-OrcaHostsAusnahmen
+    $abschnitte = @(foreach ($ab in $Global:OrcaHostsFolge) {
+        $roh = Get-OrcaHostsListe -Abschnitt $ab -Roh
+        if (-not $roh.Count) { continue }
+        $punkt = @($Global:OrcaEinstellungen | Where-Object { $_.Typ -eq 'HostsBlock' -and [string]$_.Soll -eq $ab -and -not $_.Ausgemustert })[0]
+        $doppelt = $ab -in $Global:OrcaHostsDoppelt
+        $gesperrt = @($roh | Where-Object { $_ -notin $aus }).Count
+        [ordered]@{ name = $ab; punkt = $(if ($punkt) { $punkt.Id } else { '' }); aktiv = [bool]($stand[$ab] -and $stand[$ab].Intakt)
+                    doppelt = [bool]$doppelt; eintraege = @($roh); zeilen = $gesperrt * $(if ($doppelt) { 2 } else { 1 }) + 1 }
+    })
+    $zeilen = 0; foreach ($a in $abschnitte) { $zeilen += $a.zeilen }
+    return [ordered]@{ abschnitte = $abschnitte; ausnahmen = @($aus); zeilenAlle = $zeilen + 2 }
+}
+
+function Invoke-OrcaGuiHosts {
+    # Aktion "hosts": Einträge ausnehmen bzw. wieder sperren. Stehende Abschnitte werden
+    # danach mit der neuen Liste neu geschrieben und nachgeprüft (Sicherung wie immer).
+    param([string[]]$Ausnehmen = @(), [string[]]$Sperren = @())
+    $sim = [bool]$Global:OrcaSimulationAktiv
+    if (-not (Get-OrcaState)) {
+        return [ordered]@{ simulation = $sim; abgebrochen = 'OrcaShield ist auf diesem Rechner noch nicht eingerichtet. Zuerst Einstellungen anwenden.'; punkte = @(); vorgaenge = @() }
+    }
+    $bekannt = Get-OrcaHostsAlleNamen
+    $punkte = New-Object System.Collections.ArrayList
+    foreach ($h in @(@($Ausnehmen) + @($Sperren) | Where-Object { $_ -and $_.ToLower() -notin $bekannt })) {
+        [void]$punkte.Add([ordered]@{ id = "hosts:$h"; richtung = ''; ok = $false; status = 'Unbekannt'; grund = 'Steht nicht in der Hosts-Liste von OrcaShield - nicht angefasst' })
+    }
+    $stand = Get-OrcaHostsAbschnitte
+    $aktiv = @($Global:OrcaHostsFolge | Where-Object { $stand[$_].Intakt })
+    # Nicht @(Get-OrcaHostsAusnahmen): die Funktion gibt ihre Liste mit "return ," zurück, @() packte sie ein zweites Mal ein
+    $bisher = Get-OrcaHostsAusnahmen
+    $neu = @(@($bisher) + @($Ausnehmen | ForEach-Object { $_.ToLower() }) | Where-Object { $_ -notin @($Sperren | ForEach-Object { $_.ToLower() }) })
+    $gespeichert = Set-OrcaHostsAusnahmen -Namen $neu
+    $grund = ''
+    if ($gespeichert -and $aktiv.Count) {
+        $r = Write-OrcaHosts -Abschnitte $aktiv
+        if (-not $r.Erfolg) { $grund = $r.Grund }
+    }
+    $nach = Get-OrcaHostsAbschnitte
+    $alleIntakt = -not @($aktiv | Where-Object { -not $nach[$_].Intakt }).Count
+    if (-not $gespeichert) { $grund = 'Zustandsdatei nicht geschrieben - nichts geändert' }
+    elseif (-not $alleIntakt -and -not $grund) { $grund = 'Nachprüfung: Hosts-Block entspricht nicht der neuen Liste' }
+    foreach ($h in @($Ausnehmen | Where-Object { $_ -and $_.ToLower() -in $bekannt })) { [void]$punkte.Add([ordered]@{ id = "hosts:$h"; richtung = 'aus'; ok = ($gespeichert -and $alleIntakt); status = $(if ($gespeichert -and $alleIntakt) { 'Gesetzt' } else { 'Fehler' }); grund = $grund }) }
+    foreach ($h in @($Sperren | Where-Object { $_ -and $_.ToLower() -in $bekannt })) { [void]$punkte.Add([ordered]@{ id = "hosts:$h"; richtung = 'ein'; ok = ($gespeichert -and $alleIntakt); status = $(if ($gespeichert -and $alleIntakt) { 'Gesetzt' } else { 'Fehler' }); grund = $grund }) }
+    Write-OrcaLog -Level $(if ($gespeichert -and $alleIntakt) { 'OK' } else { 'FEHLER' }) -Source 'GUI' -Message "Hosts: ausgenommen $($Ausnehmen -join ',') | wieder gesperrt $($Sperren -join ',') | neu geschrieben: $($aktiv -join ',') $grund"
+    return [ordered]@{ simulation = $sim; abgebrochen = ''; punkte = @($punkte); vorgaenge = @(Get-OrcaGuiVorgaenge) }
 }
 
 function Get-OrcaGuiApps {
@@ -169,6 +224,8 @@ function Get-OrcaGuiApps {
     $namen = @()
     try { $namen = @(Get-AppxPackage -AllUsers -ErrorAction Stop | ForEach-Object { $_.Name } | Sort-Object -Unique) }
     catch { return [ordered]@{ fehler = $_.Exception.Message; liste = @() } }
+    $st = Get-OrcaState
+    $entfernt = @(if ($st) { @($st.EntfernteApps) | Where-Object { $_ } })
     $liste = foreach ($app in $Global:OrcaApps) {
         $suche = @(Get-OrcaAppNamen -App $app)
         $treffer = @($namen | Where-Object { $n = $_; @($suche | Where-Object { $n -like "*$_*" }).Count -gt 0 })
@@ -177,15 +234,62 @@ function Get-OrcaGuiApps {
             browser = ($app.Warnung -eq 'BROWSER-WARNUNG')
             warnung = $(if ($app.Warnung -and $app.Warnung -ne 'BROWSER-WARNUNG') { $app.Warnung } else { '' })
             installiert = ($treffer.Count -gt 0); pakete = @($treffer)
+            entfernt = ($app.Id -in $entfernt); zurueck = ($app.Id -in $entfernt -and $treffer.Count -eq 0 -and $app.Id -ne 'M10')
         }
     }
-    return [ordered]@{ fehler = ''; liste = @($liste) }
+    $katalogNamen = @($Global:OrcaApps | ForEach-Object { Get-OrcaAppNamen -App $_ })
+    $weitere = @()
+    try {
+        $weitere = @(Get-AppxPackage -AllUsers -ErrorAction Stop | Where-Object { -not $_.IsFramework -and -not $_.IsResourcePackage -and "$($_.SignatureKind)" -in @('Store', 'System') } |
+            Sort-Object Name -Unique | Where-Object { $n = $_.Name; -not @($katalogNamen | Where-Object { $n -like "*$_*" }).Count } |
+            ForEach-Object { [ordered]@{ name = $_.Name; art = "$($_.SignatureKind)"; entfernbar = (-not $_.NonRemovable); schutz = [bool](Test-OrcaAppGeschuetzt $_.Name) } })
+    } catch { }
+    return [ordered]@{ fehler = ''; liste = @($liste); weitere = $weitere }
+}
+
+function Invoke-OrcaGuiAppsZurueck {
+    param([string[]]$Ids = @())
+    $sim = [bool]$Global:OrcaSimulationAktiv
+    $st = Get-OrcaState
+    $familien = @{}
+    if ($st -and $st.AppFamilien) { foreach ($p in $st.AppFamilien.PSObject.Properties) { $familien[$p.Name] = @($p.Value) } }
+    $punkte = New-Object System.Collections.ArrayList
+    $zurueck = New-Object System.Collections.ArrayList
+    foreach ($id in @($Ids)) {
+        $app = @($Global:OrcaApps | Where-Object { $_.Id -eq $id })[0]
+        if (-not $app -or $id -eq 'M10') {
+            [void]$punkte.Add([ordered]@{ id = "app:$id"; richtung = 'ein'; ok = $false; status = 'Unbekannt'; grund = $(if ($id -eq 'M10') { 'Edge ist kein Store-Paket - von der Website von Microsoft neu installieren' } else { 'Nicht im App-Katalog - nicht angefasst' }) })
+            continue
+        }
+        # Paketfamilie: beim Entfernen gemerkt, sonst Paketname mit dem Herausgeber von Microsoft
+        $pfn = @($familien[$id])[0]
+        if (-not $pfn) { $pfn = $(if ($app.Paket -eq 'Clipchamp.Clipchamp') { 'Clipchamp.Clipchamp_yxz26nhyzhsrt' } else { "$($app.Paket)_8wekyb3d8bbwe" }) }
+        $ok = $false; $grund = ''
+        try {
+            Add-AppxPackage -RegisterByFamilyName -MainPackage $pfn -ErrorAction Stop
+            $ok = [bool](@(Get-AppxPackage -Name $app.Paket -ErrorAction SilentlyContinue).Count) -or $sim
+        } catch { $grund = $_.Exception.Message }
+        if ($ok) {
+            [void]$zurueck.Add($id)
+            [void]$punkte.Add([ordered]@{ id = "app:$id"; richtung = 'ein'; ok = $true; status = 'Gesetzt'; grund = '' })
+        } else {
+            [void]$punkte.Add([ordered]@{ id = "app:$id"; richtung = 'ein'; ok = $false; status = 'Store'; grund = 'Die Dateien der App sind nicht mehr auf dem Rechner - über den Microsoft Store neu installieren'
+                                          store = "ms-windows-store://pdp/?PFN=$pfn" })
+        }
+        Write-OrcaLog -Level $(if ($ok) { 'OK' } else { 'WARN' }) -Source 'GUI' -Message "App wieder installieren $id ($pfn): $(if ($ok) { 'registriert' } else { "nicht möglich, Store nötig - $grund" })"
+    }
+    # Nicht mehr als entfernt führen - sonst nähme der Wächter sie beim nächsten Lauf wieder weg
+    if ($zurueck.Count -and $st) {
+        [void](Set-OrcaStateFeld -Name 'EntfernteApps' -Wert @(@($st.EntfernteApps) | Where-Object { $_ -and $_ -notin $zurueck }))
+    }
+    return [ordered]@{ simulation = $sim; abgebrochen = ''; punkte = @($punkte); vorgaenge = @(Get-OrcaGuiVorgaenge) }
 }
 
 function Invoke-OrcaGuiApps {
     param([string[]]$Ids = @())
     $sim = [bool]$Global:OrcaSimulationAktiv
     $punkte = New-Object System.Collections.ArrayList
+    $script:OrcaAppFamilienZuletzt = @{}
     $nr = 0
     foreach ($id in @($Ids)) {
         $nr++
@@ -197,6 +301,7 @@ function Invoke-OrcaGuiApps {
         Write-Progress -Activity 'Apps entfernen' -Status $app.Anzeige -PercentComplete ([int](100 * $nr / [Math]::Max(1, @($Ids).Count)))
         try {
             $r = Remove-OrcaApp -App $app
+            if ($r.Familien) { $script:OrcaAppFamilienZuletzt[$id] = @($r.Familien) }
             $reste = 0
             if ($r.Entfernt) { $reste = @(Clear-OrcaAppReste -App $app).Count }
             [void]$punkte.Add([ordered]@{ id = "app:$id"; richtung = 'aus'; ok = [bool]$r.Erfolg
@@ -208,6 +313,15 @@ function Invoke-OrcaGuiApps {
         }
     }
     Write-Progress -Activity 'Apps entfernen' -Completed
+    $neu = @($punkte | Where-Object { $_.status -eq 'Entfernt' } | ForEach-Object { $_.id.Substring(4) })
+    $st = Get-OrcaState
+    if ($neu.Count -and $st) {
+        [void](Set-OrcaStateFeld -Name 'EntfernteApps' -Wert @(@(@($st.EntfernteApps) | Where-Object { $_ }) + $neu | Sort-Object -Unique))
+        $fam = [ordered]@{}
+        if ($st.AppFamilien) { foreach ($p in $st.AppFamilien.PSObject.Properties) { $fam[$p.Name] = @($p.Value) } }
+        foreach ($id in $neu) { if ($script:OrcaAppFamilienZuletzt -and $script:OrcaAppFamilienZuletzt[$id]) { $fam[$id] = @($script:OrcaAppFamilienZuletzt[$id]) } }
+        [void](Set-OrcaStateFeld -Name 'AppFamilien' -Wert ([pscustomobject]$fam))
+    }
     return [ordered]@{ simulation = $sim; abgebrochen = ''; punkte = @($punkte); vorgaenge = @(Get-OrcaGuiVorgaenge) }
 }
 
@@ -225,8 +339,12 @@ function Get-OrcaGuiBestaetigung {
         [string[]]$Ein = @(), [string[]]$Aus = @(),
         [string]$Waechter = '', [string]$Bereinigung = '', [string]$Schattenkopien = '',
         [string[]]$BereicheAus = @(), [string[]]$BereicheAn = @(),
+        [string[]]$SchritteAus = @(), [string[]]$SchritteAn = @(),
         [string[]]$Sammler = @(), [string]$SammlerRichtung = '',
         [string[]]$Apps = @(), [switch]$Geraetekennung,
+        [string[]]$GdidOrte = @(), [bool]$GdidZwischenspeicher = $true, [bool]$GdidZugangsdaten = $true,
+        [string[]]$HostsAusnehmen = @(), [string[]]$HostsSperren = @(),
+        [string[]]$AppsZurueck = @(),
         [string[]]$Richtlinien = @(), [string]$RichtlinienRichtung = '',
         [string]$AufnehmenArt = '', [int]$AufnehmenAnzahl = 0, [switch]$AufnehmenAlle,
         [ValidateSet('de', 'en')][string]$Sprache = 'de'
@@ -254,6 +372,21 @@ function Get-OrcaGuiBestaetigung {
     if ($Schattenkopien) {
         [void]$zeilen.Add("$(& $sp 'Schattenkopien beim Herunterfahren löschen' 'Delete shadow copies at shutdown') - $(& $umschalten $Schattenkopien)")
         if ($Schattenkopien -eq 'ein') { [void]$risiken.Add((& $sp 'Ältere Dateiversionen und Wiederherstellungspunkte werden bei jedem Herunterfahren endgültig gelöscht' 'Older file versions and restore points are permanently deleted at every shutdown')) }
+    }
+    $schritt = { param($n) @($Global:OrcaBereinigungsSchritte | Where-Object { $_.Name -eq $n })[0] }
+    $endgueltig = @('papierkorb', 'schattenkopien')
+    $folgeZeile = { param($s)
+        $f = "$(& $kt $s.Anzeige): $(& $kt $s.Folge)"
+        if ($s.Name -in $endgueltig) { [void]$risiken.Add($f) } else { [void]$zeilen.Add("   $(& $sp 'Folge' 'Consequence') - $f") } }
+    foreach ($n in @($SchritteAus | Where-Object { $_ })) { $s = & $schritt $n; if ($s) { [void]$zeilen.Add("$(& $sp 'Bereinigung' 'Cleanup'): $(& $kt $s.Anzeige) - $(& $sp 'ausschalten' 'turn off')") } }
+    foreach ($n in @($SchritteAn | Where-Object { $_ })) { $s = & $schritt $n; if ($s) { [void]$zeilen.Add("$(& $sp 'Bereinigung' 'Cleanup'): $(& $kt $s.Anzeige) - $(& $sp 'einschalten' 'turn on')"); & $folgeZeile $s } }
+    if ($Bereinigung -eq 'ein') {
+        $st = Get-OrcaState
+        foreach ($s in $Global:OrcaBereinigungsSchritte) {
+            if ($s.Name -eq 'schattenkopien') { continue }   # eigener Schalter, oben
+            $laeuft = ($s.Name -notin @($st.BereinigungAus) -and $s.Name -notin $SchritteAus) -or $s.Name -in $SchritteAn
+            if ($laeuft -and $s.Name -notin $SchritteAn) { & $folgeZeile $s }
+        }
     }
     $bereich = { param($n) $b = @($Global:OrcaWaechterBereiche | Where-Object { $_.Name -eq $n })[0]; if ($b) { & $kt $b.Anzeige } else { $n } }
     foreach ($n in @($BereicheAus | Where-Object { $_ })) { [void]$zeilen.Add("$(& $sp 'Prüfbereich' 'Check area') $(& $bereich $n) - $(& $sp 'ausschalten' 'turn off')") }
@@ -288,9 +421,22 @@ function Get-OrcaGuiBestaetigung {
     }
 
     if ($Geraetekennung) {
-        [void]$zeilen.Add((& $sp 'Gespeicherte Microsoft-Gerätekennung entfernen' 'Remove the stored Microsoft device ID'))
-        [void]$risiken.Add((& $sp 'Gespeicherte Microsoft-Konto-Zugangsdaten werden gelöscht - danach in Office, OneDrive und im Store neu anmelden' 'Stored Microsoft account credentials are deleted - sign in again in Office, OneDrive and the Store afterwards'))
+        $orte = if (@($GdidOrte | Where-Object { $_ }).Count) { @($GdidOrte | Where-Object { $_ }) } else { @($Global:OrcaGdidOrte | ForEach-Object { $_.Name }) }
+        $ortEn = @{ 'dein Profil' = 'your profile'; 'Vorlageprofil' = 'template profile'; 'Systemkonto' = 'system account' }
+        foreach ($o in $orte) { [void]$zeilen.Add("$(& $sp 'Gerätekennung entfernen' 'Remove device ID'): $(if ($en -and $ortEn.ContainsKey($o)) { $ortEn[$o] } else { $o })") }
+        if ($GdidZwischenspeicher) { [void]$zeilen.Add((& $sp 'Token-Zwischenspeicher leeren' 'Clear the token cache')) }
+        if ($GdidZugangsdaten) {
+            [void]$zeilen.Add((& $sp 'Gespeicherte Microsoft-Konto-Zugangsdaten löschen' 'Delete stored Microsoft account credentials'))
+            [void]$risiken.Add((& $sp 'Gespeicherte Microsoft-Konto-Zugangsdaten werden gelöscht - danach in Office, OneDrive und im Store neu anmelden' 'Stored Microsoft account credentials are deleted - sign in again in Office, OneDrive and the Store afterwards'))
+        }
     }
+    foreach ($h in @($HostsAusnehmen | Where-Object { $_ })) { [void]$zeilen.Add("Hosts: $h - $(& $sp 'nicht mehr sperren' 'no longer block')") }
+    foreach ($h in @($HostsSperren | Where-Object { $_ })) { [void]$zeilen.Add("Hosts: $h - $(& $sp 'wieder sperren' 'block again')") }
+    foreach ($id in @($AppsZurueck | Where-Object { $_ })) {
+        $app = @($Global:OrcaApps | Where-Object { $_.Id -eq $id })[0]
+        [void]$zeilen.Add("$(& $sp 'App wieder installieren' 'Reinstall app'): $(if ($app) { & $kt $app.Anzeige } else { $id })")
+    }
+    if (@($AppsZurueck | Where-Object { $_ }).Count) { [void]$risiken.Add((& $sp 'Gibt es die App nicht mehr auf dem Rechner, öffnet OrcaShield ihre Seite im Microsoft Store - das ist eine Verbindung zu Microsoft' 'If the app is no longer on the PC, OrcaShield opens its page in the Microsoft Store - that is a connection to Microsoft')) }
     return [ordered]@{ zeilen = @($zeilen); risiken = @($risiken) }
 }
 
@@ -350,7 +496,9 @@ function Invoke-OrcaGuiAutomatik {
         [ValidateSet('', 'ein', 'aus')][string]$Bereinigung = '',
         [ValidateSet('', 'ein', 'aus')][string]$Schattenkopien = '',
         [string[]]$BereicheAus = @(),
-        [string[]]$BereicheAn = @()
+        [string[]]$BereicheAn = @(),
+        [string[]]$SchritteAus = @(),
+        [string[]]$SchritteAn = @()
     )
     $sim = [bool]$Global:OrcaSimulationAktiv
     $ergebnis = New-Object System.Collections.ArrayList
@@ -424,6 +572,23 @@ function Invoke-OrcaGuiAutomatik {
             & $neu 'herunterfahren' $Bereinigung $false 'Fehler' $_.Exception.Message
             Write-OrcaLog -Level FEHLER -Source 'GUI' -Message "Bereinigung $Bereinigung fehlgeschlagen: $($_.Exception.Message)"
         }
+    }
+
+    $schrittNamen = @($Global:OrcaBereinigungsSchritte | Where-Object { $_.Name -ne 'schattenkopien' } | ForEach-Object { $_.Name })
+    foreach ($f in @(@($SchritteAus) + @($SchritteAn) | Where-Object { $_ -and $_ -notin $schrittNamen })) { & $neu "schritt:$f" '' $false 'Unbekannt' 'Kein Schritt der Bereinigung - nicht angefasst' }
+    $sAus = @($SchritteAus | Where-Object { $_ -in $schrittNamen }); $sAn = @($SchritteAn | Where-Object { $_ -in $schrittNamen })
+    if ($sAus.Count -or $sAn.Count) {
+        $bisher = @((Get-OrcaState).BereinigungAus | Where-Object { $_ })
+        $soll = @(@($bisher) + $sAus | Where-Object { $_ -notin $sAn } | Sort-Object -Unique)
+        $gespeichert = Set-OrcaStateFeld -Name 'BereinigungAus' -Wert $soll
+        $jetzt = @((Get-OrcaState).BereinigungAus | Where-Object { $_ })
+        foreach ($n in $sAus) { $ok = ($gespeichert -and $n -in $jetzt); & $neu "schritt:$n" 'aus' $ok $(if ($ok) { 'Gesetzt' } else { 'Fehler' }) $(if ($ok) { '' } else { 'Zustandsdatei nicht geschrieben' }) }
+        foreach ($n in $sAn)  { $ok = ($gespeichert -and $n -notin $jetzt); & $neu "schritt:$n" 'ein' $ok $(if ($ok) { 'Gesetzt' } else { 'Fehler' }) $(if ($ok) { '' } else { 'Zustandsdatei nicht geschrieben' }) }
+        if ('auslagerung' -in $sAus) {
+            $mm = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management'
+            if ([int](Get-OrcaRegWert -Pfad $mm -Name 'ClearPageFileAtShutdown') -eq 1) { [void](Set-OrcaRegWert -Pfad $mm -Name 'ClearPageFileAtShutdown' -Wert 0) }
+        }
+        Write-OrcaLog -Level OK -Source 'GUI' -Message "Bereinigung, Schritte aus: $($sAus -join ',') | ein: $($sAn -join ',') -> abgeschaltet: $($jetzt -join ',')"
     }
 
     if ($Schattenkopien) {

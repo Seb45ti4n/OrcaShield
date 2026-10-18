@@ -2,7 +2,7 @@
 
 **Datenschutz-Härtung für Windows 11 – gemessen, nachgeprüft, umkehrbar.**
 
-[English](README.md) · Version **1.0.1 Public Beta** · Windows 11 (x64 und ARM64) · MIT-Lizenz
+[English](README.md) · Version **1.1.0 Public Beta** · Windows 11 (x64 und ARM64) · MIT-Lizenz
 
 OrcaShield schaltet ab, was Windows über dich sendet, hält es abgeschaltet, beseitigt beim Herunterfahren Spuren und schützt vor der Microsoft-Gerätekennung – nach einer Regel über allem: **erst messen, dann handeln, dann nachprüfen.** Nichts wird ohne deine Bestätigung geändert – schaltest du den Wächter oder die Bereinigung ein, handeln sie danach bei jeder Anmeldung bzw. jedem Herunterfahren selbst. Jede Änderung lässt sich zurücknehmen, und OrcaShield selbst sendet nichts.
 
@@ -12,17 +12,17 @@ OrcaShield schaltet ab, was Windows über dich sendet, hält es abgeschaltet, be
 
 ## Funktionen
 
-### Katalog – 520 Einstellungen
+### Katalog – 521 Einstellungen
 Telemetrie, Werbe-ID, Copilot und Recall, Standort, Websuche im Startmenü, Sprach- und Tippdaten, Geräteinventur, Office-Cloudanbindung, Kontosynchronisierung, Cloud-Zwischenablage, Fehlerberichte, Aktivitätsverlauf, App-Berechtigungen, Netzwerk- und TLS-Härtung, Verhalten von Windows Update, Defender-Optionen und mehr.
 
 - **Jeder Wert ist belegt:** Richtlinien an den Richtliniendefinitionen von Windows (ADMX: Benutzer oder Computer, unterstützte Versionen, Editionen, ob ein Schalter in den Einstellungen gesperrt wird), alle anderen Werte an der Programmdatei von Windows, die sie liest. Was sich nicht belegen lässt, steht nicht im Katalog, sondern unter **„Nicht unterstützt“** mit Begründung (147 bekannte Optionen).
 - **Drei Schutzstufen**, aufeinander aufbauend, je Bereich oder für alles:
   - **Basis** (39 Einstellungen, grün) – das Wichtigste, ohne Nebenwirkungen.
   - **Erweitert** (237, gelb) – alles ohne spürbare Nachteile. Empfohlen.
-  - **Maximal** (327, rot) – höchster Datenschutz, auch mit spürbarer Folge.
+  - **Maximal** (328, rot) – höchster Datenschutz, auch mit spürbarer Folge.
 - **Zusatz** (186 Einstellungen, in keiner Stufe): Punkte, die Programme abschneiden, einen Schalter für alle Konten sperren oder **den Schutz senken** (etwa automatische Updates, SmartScreen, Teile von Defender oder die virtualisierungsbasierte Sicherheit aus). Nur einzeln einschaltbar, Vorgabe Nein; Sicherheitsrisiken rot mit ⚠ und Pflichtwarnung.
 - **Experimentell** (7 Einstellungen): Leistungswerte, die Windows nachweislich liest, jeweils mit gemessenem Wert vorher und nachher.
-- Zusammen: 520 = 327 in den Stufen + 186 Zusatz + 7 Experimentell. Die 147 Optionen unter „Nicht unterstützt“ zählen nicht dazu – OrcaShield setzt sie nicht.
+- Zusammen: 521 = 328 in den Stufen + 186 Zusatz + 7 Experimentell. Die 147 Optionen unter „Nicht unterstützt“ zählen nicht dazu – OrcaShield setzt sie nicht.
 - Zu jeder Einstellung: Erklärung in Alltagssprache, technische Angaben (Pfad, Wert, Soll/Ist) und der **PowerShell-Befehl**, mit dem du sie selbst setzt oder zurücknimmst.
 
 ### Vorschau und doppelte Bestätigung
@@ -30,7 +30,7 @@ Nichts wird gesetzt, bevor du die Vorschau („Prüfen & anwenden“) bestätigt
 
 ### Ausgangszustand, Sicherungspunkte, Rückbau
 - Vor der ersten Änderung misst und sichert OrcaShield den **Ausgangszustand** jeder Einstellung und eine Kopie der betroffenen Registry-Zweige. Jeder Rückbau führt auf diesen gemessenen Stand zurück – nicht auf einen angenommenen Windows-Standardwert.
-- **Sicherungspunkte** und **Profile** (Export/Import) liegen als Dateien im geschützten Datenordner.
+- **Sicherungspunkte** und **Profile** (Export/Import) liegen als Dateien im geschützten Datenordner. Vor jedem Anwenden entsteht automatisch ein Sicherungspunkt; höchstens 30 bleiben (der älteste fällt weg), der Ausgangszustand zählt nicht dazu und ist nie löschbar. Sicherungspunkte lassen sich umbenennen.
 - Einzelne Einstellungen, alles auf einmal oder – beim Deinstallieren – auf Wunsch alles automatisch zurücksetzen.
 
 ### Wächter (optional, anfangs aus)
@@ -49,25 +49,28 @@ Der Wächter arbeitet für das Konto, mit dem OrcaShield eingerichtet wurde. Ein
 ### Bereinigung beim Herunterfahren (optional, anfangs aus)
 Beseitigt bei jedem Herunterfahren und Neustart Spuren: Papierkorb, Miniaturansichten, Diagnoseprotokolle, temporäre Dateien, Absturzabbilder, Prefetch, zuletzt verwendete Dateien, Explorer-Verläufe und ShellBags; die Auslagerungsdatei wird beim Herunterfahren geleert. Nach der nächsten Anmeldung folgt auf C: ein TRIM-Durchlauf: Die SSD erfährt, welche Bereiche frei sind – wann sie die Daten dort tatsächlich löscht, entscheidet das Laufwerk.
 
-Schattenkopien (ältere Fassungen von Dateien, Wiederherstellungspunkte) werden nur mit einem eigenen Schalter gelöscht, Vorgabe aus.
+Jeder Schritt lässt sich unter „Überwachung & Automatik“ einzeln ein- und ausschalten; zu jedem steht, was er löscht und was du davon merkst. Schattenkopien (ältere Fassungen von Dateien, Wiederherstellungspunkte) werden nur mit ihrem eigenen Schalter gelöscht, Vorgabe aus.
 
 > ⚠ Das **löscht endgültig**: Bei jedem Herunterfahren wird der Papierkorb geleert, mit dem eigenen Schalter auch die Schattenkopien. Nur einschalten, wenn du das willst.
 
 Eingetragen genau so, wie es der Gruppenrichtlinien-Editor tut; Einträge anderer Werkzeuge bleiben unangetastet. Wer sie ausschaltet, schaltet auch das Leeren der Auslagerungsdatei wieder aus.
 
 ### Apps
-Entfernt vorinstallierte Apps, die du nicht brauchst (37 Apps im Katalog), samt Rückständen. Eine Schutzliste (Startmenü, Store, Shell, App-Installer, Laufzeiten, Windows-Sicherheit) wird nie angefasst. Microsoft Edge nur mit eigener doppelter Bestätigung; WebView2, das viele Programme brauchen, bleibt.
+Entfernt vorinstallierte Apps, die du nicht brauchst (42 Apps im Katalog), samt Rückständen. Eine Schutzliste (Startmenü, Store, Shell, App-Installer, Laufzeiten, Windows-Sicherheit) wird nie angefasst. Microsoft Edge nur mit eigener doppelter Bestätigung; WebView2, das viele Programme brauchen, bleibt.
+- Von OrcaShield entfernte Apps lassen sich mit einem Klick wieder installieren – aus Windows neu registriert, solange die Dateien noch da sind, sonst über ihre Seite im Microsoft Store (das ist eine Verbindung zu Microsoft, nur auf deinen Klick).
+- Zeigt alle übrigen Store- und System-Apps des Rechners (nur zur Ansicht) und einige empfohlene kostenlose Programme (Link zur Website des Herausgebers).
 
 ### Schutz vor der Gerätekennung
 Windows bekommt von Microsoft eine Gerätekennung (GDID), die bei jeder Kontoanfrage mitgeschickt wird – ein VPN hilft dagegen nicht.
 - Sperrt die neun Adressen, über die sie ausgestellt und abgeglichen wird (Hosts-Datei); die Anmeldung mit dem Microsoft-Konto bleibt möglich.
 - Optional zusätzlich die Kontoanmeldung selbst – erst dann kommt sicher keine neue Kennung (Store, Xbox, OneDrive und Office-Anmeldung gehen dann nicht mehr, Vorgabe Nein).
 - Eine Firewallregel nimmt dem Dienst der Kontoanmeldung den Netzzugang.
-- Entfernt eine schon gespeicherte Kennung auf Knopfdruck (dabei werden gespeicherte Microsoft-Zugangsdaten gelöscht – deshalb nur auf Knopfdruck).
+- Entfernt eine schon gespeicherte Kennung auf Knopfdruck – je Ort (dein Profil, Vorlageprofil, Systemkonto), wahlweise mit Token-Zwischenspeicher und gespeicherten Microsoft-Zugangsdaten (Letzteres heißt neu anmelden, deshalb nur auf Knopfdruck).
 
 ### Hosts-Datei und DNS
 - OrcaShield verwaltet **nur seinen eigenen markierten Block** in der Hosts-Datei. Alles außerhalb gehört dir. Vor jedem Schreiben wird die ganze Datei gesichert; fehlt danach auch nur eine deiner Zeilen, wird die Sicherung zurückgelegt.
 - Rund 100 Adressen für Werbung und Telemetrie von Microsoft als zweite Sicherung.
+- Jeder einzelne Eintrag lässt sich auf der Seite „Hosts“ ausnehmen – etwa um OneDrive oder Office zu erlauben. Der Wächter hält genau diese Liste.
 - Verschlüsseltes DNS: Quad9 mit DNS-over-HTTPS ohne Rückfall auf unverschlüsseltes DNS.
 
 ### Richtlinien und ausgegraute Schalter
@@ -80,10 +83,10 @@ Deutsch und Englisch (unter „Anpassen“). Das Setup folgt der Sprache von Win
 
 ## Installation
 
-1. `OrcaShield-Setup-1.0.1-Public-Beta.exe` unter **Releases** dieses Projekts herunterladen. Eine Datei für normale PCs (x64) und ARM-Geräte – das Setup wählt selbst.
+1. `OrcaShield-Setup-1.1.0-Public-Beta.exe` unter **Releases** dieses Projekts herunterladen. Eine Datei für normale PCs (x64) und ARM-Geräte – das Setup wählt selbst.
 2. Empfohlen: Prüfsumme mit der im Release angegebenen vergleichen:
    ```powershell
-   Get-FileHash .\OrcaShield-Setup-1.0.1-Public-Beta.exe -Algorithm SHA256
+   Get-FileHash .\OrcaShield-Setup-1.1.0-Public-Beta.exe -Algorithm SHA256
    ```
 3. Setup starten, die Benutzerkontensteuerung mit Ja bestätigen.
 4. OrcaShield über das Startmenü starten. Beim Start misst es den Zustand des Rechners (Bestandsaufnahme) und ändert **nichts**.

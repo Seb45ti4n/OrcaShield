@@ -79,6 +79,16 @@ $Global:OrcaApps += New-OrcaApp -Id 'L14' -Paket 'Microsoft.WindowsFeedbackHub' 
     -Erklaerung 'Feedback-App, über die Nutzungsdaten und Diagnoseinformationen an Microsoft gehen.'
 $Global:OrcaApps += New-OrcaApp -Id 'L15' -Paket 'Microsoft.MicrosoftOfficeHub' -Anzeige 'Office-Hub' -Stufe 'Light' `
     -Erklaerung 'Werbe-Kachel für Microsoft 365. Kein echtes Office, nur ein Verweis auf das Abo-Angebot.'
+$Global:OrcaApps += New-OrcaApp -Id 'L16' -Paket 'Microsoft.BingSearch' -Anzeige 'Bing-Suche' -Stufe 'Light' `
+    -Erklaerung 'Eigene App für die Websuche mit Bing. Die Windows-Suche funktioniert ohne sie.'
+$Global:OrcaApps += New-OrcaApp -Id 'S18' -Paket 'MicrosoftWindows.CrossDevice' -Anzeige 'Mobile Geräte' -Stufe 'Standard' `
+    -Erklaerung 'Verbindet Windows mit einem Smartphone (Kamera, Benachrichtigungen, Dateien) über ein Microsoft-Konto.'
+$Global:OrcaApps += New-OrcaApp -Id 'S19' -Paket 'Microsoft.Edge.GameAssist' -Anzeige 'Edge Game Assist' -Stufe 'Standard' `
+    -Erklaerung 'Browserfenster von Edge, das sich in Spielen einblenden lässt.'
+$Global:OrcaApps += New-OrcaApp -Id 'M12' -Paket 'Microsoft.Xbox.TCUI' -Anzeige 'Xbox-Oberfläche in Spielen' -Stufe 'Maximum' `
+    -Erklaerung 'Zeigt Xbox-Profile, Freunde und Einladungen in Spielen an. Manche Spiele aus dem Store brauchen sie.'
+$Global:OrcaApps += New-OrcaApp -Id 'M13' -Paket 'Microsoft.XboxIdentityProvider' -Anzeige 'Xbox-Anmeldung für Spiele' -Stufe 'Maximum' `
+    -Erklaerung 'Meldet Spiele beim Xbox-Netzwerk an. Ohne sie lassen sich Spiele mit Xbox-Anmeldung nicht mehr spielen.'
 
 # --------------------------------------------------------------
 #  STUFE STANDARD - zusätzlich zu Light
@@ -172,6 +182,7 @@ function Remove-OrcaApp {
     $namen    = Get-OrcaAppNamen -App $App
     $gefunden = $false
     $fehler   = ''
+    $familien = New-Object System.Collections.ArrayList
 
     try {
         foreach ($name in $namen) {
@@ -180,6 +191,7 @@ function Remove-OrcaApp {
             foreach ($p in $pakete) {
                 if (Test-OrcaAppGeschuetzt $p.Name) { Write-OrcaLog -Level SKIP -Source 'DEBLOAT' -Message "$($p.Name) steht auf der Schutzliste - nicht entfernt"; continue }
                 $gefunden = $true
+                if ($p.PackageFamilyName -and $p.PackageFamilyName -notin $familien) { [void]$familien.Add([string]$p.PackageFamilyName) }
                 try {
                     Remove-AppxPackage -Package $p.PackageFullName -AllUsers -ErrorAction Stop
                 } catch {
@@ -234,7 +246,7 @@ function Remove-OrcaApp {
         }
 
         Write-OrcaLog -Level OK -Source 'DEBLOAT' -Message "$($App.Anzeige) entfernt"
-        return @{ Erfolg = $true; Entfernt = $true; Grund = '' }
+        return @{ Erfolg = $true; Entfernt = $true; Grund = ''; Familien = @($familien) }
     }
     catch {
         Write-OrcaLog -Level FEHLER -Source 'DEBLOAT' -Message "$($App.Anzeige) - FEHLGESCHLAGEN. Grund: $($_.Exception.Message)"
