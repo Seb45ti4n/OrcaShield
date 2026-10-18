@@ -131,6 +131,12 @@ end;
 function InitializeSetup(): Boolean;
 begin
   Result := True;
+  if FileExists(ExpandConstant('{sd}\Orca\OrcaShield\Skripte\Orca-Waechter-Shutdown.ps1')) then
+  begin
+    SuppressibleMsgBox(FmtMessage(CustomMessage('PsFassung'), [ExpandConstant('{sd}\Orca\OrcaShield')]), mbError, MB_OK, IDOK);
+    Result := False;
+    Exit;
+  end;
   if not NetDa() then
   begin
     SuppressibleMsgBox(CustomMessage('NetFehlt'), mbError, MB_OK, IDOK);

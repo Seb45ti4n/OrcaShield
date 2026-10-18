@@ -66,8 +66,8 @@ $Global:OrcaApps += New-OrcaApp -Id 'L08' -Paket 'Microsoft.MicrosoftSolitaireCo
     -Erklaerung 'Kartenspielsammlung mit Werbung und kostenpflichtigem Abo zur Werbefreiheit.'
 $Global:OrcaApps += New-OrcaApp -Id 'L09' -Paket 'Microsoft.Todos' -Anzeige 'Microsoft To Do' -Stufe 'Light' `
     -Erklaerung 'Aufgabenverwaltung mit Zwang zum Microsoft-Konto und Cloud-Synchronisierung.'
-$Global:OrcaApps += New-OrcaApp -Id 'L10' -Paket 'MSTeams' -Anzeige 'Microsoft Teams (privat)' -Stufe 'Light' `
-    -Erklaerung 'Die private Chat-Variante von Teams, die Windows ungefragt mitinstalliert. Die geschäftliche Version ist davon nicht betroffen.' `
+$Global:OrcaApps += New-OrcaApp -Id 'L10' -Paket 'MSTeams' -Anzeige 'Microsoft Teams' -Stufe 'Maximum' `
+    -Erklaerung 'Der Teams-Client, den Windows mitinstalliert. Er gilt für private und geschäftliche Konten - wer Teams für Arbeit oder Schule nutzt, verliert ihn mit.' `
     -Alternativen @('MicrosoftTeams')
 $Global:OrcaApps += New-OrcaApp -Id 'L11' -Paket 'Microsoft.549981C3F5F10' -Anzeige 'Cortana (App)' -Stufe 'Light' `
     -Erklaerung 'Das App-Paket des Sprachassistenten Cortana.'
@@ -152,6 +152,12 @@ $Global:OrcaApps += New-OrcaApp -Id 'M10' -Paket 'Microsoft.MicrosoftEdge.Stable
 # --------------------------------------------------------------
 #  APP ENTFERNEN
 # --------------------------------------------------------------
+function Test-OrcaAppGeschuetzt {
+    param([string]$Name)
+    foreach ($schutz in $Global:OrcaSchutzliste) { if ($Name -like "*$schutz*") { return $true } }
+    return $false
+}
+
 function Remove-OrcaApp {
     param([Parameter(Mandatory)]$App)
 
@@ -172,6 +178,7 @@ function Remove-OrcaApp {
             # 1) Für alle aktuellen Benutzer entfernen
             $pakete = Get-AppxPackage -AllUsers -Name "*$name*" -ErrorAction SilentlyContinue
             foreach ($p in $pakete) {
+                if (Test-OrcaAppGeschuetzt $p.Name) { Write-OrcaLog -Level SKIP -Source 'DEBLOAT' -Message "$($p.Name) steht auf der Schutzliste - nicht entfernt"; continue }
                 $gefunden = $true
                 try {
                     Remove-AppxPackage -Package $p.PackageFullName -AllUsers -ErrorAction Stop
@@ -184,6 +191,7 @@ function Remove-OrcaApp {
             $prov = Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
                     Where-Object { $_.DisplayName -like "*$name*" }
             foreach ($p in $prov) {
+                if (Test-OrcaAppGeschuetzt $p.DisplayName) { continue }
                 $gefunden = $true
                 try {
                     Remove-AppxProvisionedPackage -Online -PackageName $p.PackageName -ErrorAction Stop | Out-Null
@@ -216,7 +224,7 @@ function Remove-OrcaApp {
         # Gegenprobe nach dem Entfernen: Erfolg nur melden, wenn wirklich weg.
         $rest = @()
         foreach ($name in $namen) {
-            $rest += @(Get-AppxPackage -AllUsers -Name "*$name*" -ErrorAction SilentlyContinue)
+            $rest += @(Get-AppxPackage -AllUsers -Name "*$name*" -ErrorAction SilentlyContinue | Where-Object { -not (Test-OrcaAppGeschuetzt $_.Name) })
         }
         if ($rest.Count -gt 0) {
             $grund = if ($fehler) { $fehler } else { 'weiterhin vorhanden - vermutlich von Windows geschützt' }
@@ -282,7 +290,6 @@ function Clear-OrcaAppReste {
         # 2) Verwaiste Registry-Einträge im Profil des Benutzers
         $sid = if ($alsSystem) { $p.Sid } else { '' }
         $regPfade = @(
-            'HKCU:\SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages'
             'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search\JumplistData'
         )
         foreach ($rp in $regPfade) {

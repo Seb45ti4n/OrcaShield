@@ -200,7 +200,7 @@ namespace OrcaShield
                 ["OrcaAufArt"] = aufnehmenArt ?? "", ["OrcaAufAnzahl"] = aufnehmenAnzahl, ["OrcaAufAlle"] = aufnehmenAlle,
                 ["OrcaRichtlinien"] = richtlinien ?? new string[0], ["OrcaRichtlinienRichtung"] = richtlinienRichtung ?? "",
                 ["OrcaEin"] = ein ?? new string[0], ["OrcaAus"] = aus ?? new string[0],
-                ["OrcaW"] = auto?.Waechter ?? "", ["OrcaB"] = auto?.Bereinigung ?? "",
+                ["OrcaW"] = auto?.Waechter ?? "", ["OrcaB"] = auto?.Bereinigung ?? "", ["OrcaSk"] = auto?.Schattenkopien ?? "",
                 ["OrcaBAus"] = auto?.BereicheAus ?? new string[0], ["OrcaBAn"] = auto?.BereicheAn ?? new string[0],
                 ["OrcaSammler"] = sammler ?? new string[0], ["OrcaSammlerRichtung"] = sammlerRichtung ?? "",
                 // Nicht „OrcaApps“: so heißt der App-Katalog der Engine ($Global:OrcaApps) – Engine.cs weist das ab
@@ -208,7 +208,7 @@ namespace OrcaShield
                 ["OrcaSprache"] = _englisch ? "en" : "de",
             };
             var erg = await _engine.AufrufenAsync(
-                "ConvertTo-OrcaGuiJson -Daten (Get-OrcaGuiBestaetigung -Ein $OrcaEin -Aus $OrcaAus -Waechter $OrcaW -Bereinigung $OrcaB " +
+                "ConvertTo-OrcaGuiJson -Daten (Get-OrcaGuiBestaetigung -Ein $OrcaEin -Aus $OrcaAus -Waechter $OrcaW -Bereinigung $OrcaB -Schattenkopien $OrcaSk " +
                 "-BereicheAus $OrcaBAus -BereicheAn $OrcaBAn -Sammler $OrcaSammler -SammlerRichtung $OrcaSammlerRichtung -Apps $OrcaAppKennungen -Geraetekennung:$OrcaGdid " +
                 "-Richtlinien $OrcaRichtlinien -RichtlinienRichtung $OrcaRichtlinienRichtung " +
                 "-AufnehmenArt $OrcaAufArt -AufnehmenAnzahl $OrcaAufAnzahl -AufnehmenAlle:$OrcaAufAlle -Sprache $OrcaSprache)",
@@ -264,15 +264,16 @@ namespace OrcaShield
 
         private sealed class AutomatikAuftrag
         {
-            public string Waechter, Bereinigung;
+            public string Waechter, Bereinigung, Schattenkopien;
             public string[] BereicheAus, BereicheAn;
-            public bool Leer => Waechter == "" && Bereinigung == "" && BereicheAus.Length == 0 && BereicheAn.Length == 0;
+            public bool Leer => Waechter == "" && Bereinigung == "" && Schattenkopien == "" && BereicheAus.Length == 0 && BereicheAn.Length == 0;
         }
 
         private static AutomatikAuftrag AutomatikLesen(Dictionary<string, object> daten) => new AutomatikAuftrag
         {
             Waechter = Schalter(daten, "waechter"),
             Bereinigung = Schalter(daten, "bereinigung"),
+            Schattenkopien = Schalter(daten, "schattenkopien"),
             BereicheAus = Bereiche(daten, "bereicheAus"),
             BereicheAn = Bereiche(daten, "bereicheAn"),
         };
@@ -289,10 +290,10 @@ namespace OrcaShield
 
         private async Task<string> AutomatikAusfuehren(int id, AutomatikAuftrag a)
         {
-            _protokoll((_engine.Simulation ? "Simulation: " : "") + $"automatik Wächter '{a.Waechter}', Bereinigung '{a.Bereinigung}', Bereiche aus {a.BereicheAus.Length}, ein {a.BereicheAn.Length}");
+            _protokoll((_engine.Simulation ? "Simulation: " : "") + $"automatik Wächter '{a.Waechter}', Bereinigung '{a.Bereinigung}', Schattenkopien '{a.Schattenkopien}', Bereiche aus {a.BereicheAus.Length}, ein {a.BereicheAn.Length}");
             var erg = await _engine.AufrufenAsync(
-                "ConvertTo-OrcaGuiJson -Daten (Invoke-OrcaGuiAutomatik -Waechter $OrcaW -Bereinigung $OrcaB -BereicheAus $OrcaAus -BereicheAn $OrcaAn)",
-                new Dictionary<string, object> { ["OrcaW"] = a.Waechter, ["OrcaB"] = a.Bereinigung, ["OrcaAus"] = a.BereicheAus, ["OrcaAn"] = a.BereicheAn },
+                "ConvertTo-OrcaGuiJson -Daten (Invoke-OrcaGuiAutomatik -Waechter $OrcaW -Bereinigung $OrcaB -Schattenkopien $OrcaSk -BereicheAus $OrcaAus -BereicheAn $OrcaAn)",
+                new Dictionary<string, object> { ["OrcaW"] = a.Waechter, ["OrcaB"] = a.Bereinigung, ["OrcaSk"] = a.Schattenkopien, ["OrcaAus"] = a.BereicheAus, ["OrcaAn"] = a.BereicheAn },
                 (prozent, text) => Fortschritt(id, prozent, text));
             if (erg.Count == 0 || !(erg[erg.Count - 1] is string json)) throw new InvalidOperationException("Automatik lieferte kein Ergebnis");
             return json;

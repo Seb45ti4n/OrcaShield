@@ -1,7 +1,7 @@
 ﻿================================================================
   ORCASHIELD
   Datenschutz und Härtung für Windows 11
-  Version 1.0.0 Public Beta
+  Version 1.0.1 Public Beta
 ================================================================
 
   Nimm dir bitte ein paar Minuten für diesen Text. Datenschutz
@@ -52,7 +52,7 @@ was gewollt ist. Deshalb misst es nach, bevor es etwas tut:
      sendet - Telemetrie, Werbe-IDs, Copilot, Recall,
      Standortdaten, Websuche im Startmenü, Sprach- und
      Tippdatensammlung, Geräteinventur und mehr. Dazu
-     verschlüsseltes DNS über Quad9, Schutz vor der Microsoft-Gerätekennung, eine gepflegte Hosts-Datei und ein aufgeräumter Explorer ohne doppelte Laufwerke. 522 Punkte im Katalog, dazu 145 bekannte Optionen ohne Schalter.
+     verschlüsseltes DNS über Quad9, Schutz vor der Microsoft-Gerätekennung, eine gepflegte Hosts-Datei und ein aufgeräumter Explorer ohne doppelte Laufwerke. 520 Punkte im Katalog, dazu 147 bekannte Optionen ohne Schalter.
 
   2. ENTSCHLACKEN
      Es entfernt vorinstallierte Apps, die du nicht brauchst,
@@ -62,14 +62,18 @@ was gewollt ist. Deshalb misst es nach, bevor es etwas tut:
 
   3. AUFRÄUMEN
      Bei jedem Herunterfahren und Neustart beseitigt es
-     Datenspuren: Papierkorb, Schattenkopien, Miniaturansichten,
+     Datenspuren: Papierkorb, Miniaturansichten,
      Diagnoseprotokolle, temporäre Dateien, Absturzabbilder,
      Prefetch, zuletzt verwendete Dateien, Explorer-Verläufe und
      die Ordneransichten des Explorers (ShellBags). Die
      Auslagerungsdatei wird beim Herunterfahren geleert. Nach
-     der nächsten Anmeldung folgt ein TRIM-Durchlauf, damit die
-     SSD die gelöschten Daten wirklich verwirft.
+     der nächsten Anmeldung folgt auf C: ein TRIM-Durchlauf: Die
+     SSD erfährt, welche Bereiche frei sind. Wann sie die Daten
+     dort tatsächlich löscht, entscheidet das Laufwerk selbst.
 
+     Schattenkopien löscht die Bereinigung nur mit einem eigenen
+     Schalter (Vorgabe aus) - das nimmt Wiederherstellungspunkte
+     und ältere Dateiversionen endgültig.
      Schattenkopien entstehen vor allem durch den Computerschutz
      von Windows: eine pro Tag, mit älteren Fassungen auch
      gelöschter Dateien. SYS001 schaltet ihn für C: ab, dann
@@ -357,12 +361,12 @@ Datei. Neues Jahr, neuer Ordner.
   Sicherheitsgrundlagen (SMB-Signierung, LLMNR aus, NetBIOS aus,
   NTLMv1 aus, LSA-Schutz, kein Autorun).
 
-  MAXIMUM    336 Punkte
+  MAXIMUM    327 Punkte
   Alles, plus die Punkte mit Zielkonflikt: App-Berechtigungen
   bis in die Dateiordner, Defender ohne Cloud-Anbindung,
-  Abschaltung der virtualisierungsbasierten Sicherheit (bis hin
-  zur Anmeldesicherheit von Windows Hello, die VBS sonst am
-  Laufen hält), Sperre der Edge-Neuinstallation.
+  Sperre der Edge-Neuinstallation. Die Abschaltung der
+  virtualisierungsbasierten Sicherheit steht seit 1.0.1 unter
+  Zusatz - sie senkt den Schutz.
 
   UPDATES: Funktionsupdates bietet Windows von sich aus als
   "Herunterladen und installieren" an und installiert sie nicht
@@ -387,14 +391,19 @@ Datei. Neues Jahr, neuer Ordner.
   "Auswirkung". Die Einstufung am Ende dieses Abschnitts gilt
   für die Konsole.
 
-  ZUSATZ     178 Punkte, in keinem Profil
+  ZUSATZ     186 Punkte, in keinem Profil
   Alles, was in keine Stufe passt: Punkte, die Programme abschneiden,
   einen Schalter für alle Konten sperren oder den Schutz senken
   (etwa automatische Updates aus, SmartScreen aus, einzelne
-  Schutzfunktionen von Defender aus). Sie lassen
+  Schutzfunktionen von Defender aus, virtualisierungsbasierte
+  Sicherheit aus). Sie lassen
   sich nur einzeln einschalten, jeder mit Vorgabe Nein.
 
-  EXPERIMENTELL   8 Punkte, in keinem Profil
+  ZUSAMMEN: 520 Einstellungen = 327 in den Stufen + 186 Zusatz
+  + 7 Experimentell. Die 147 Optionen unter "Nicht unterstützt"
+  zählen nicht dazu - OrcaShield setzt sie nicht.
+
+  EXPERIMENTELL   7 Punkte, in keinem Profil
   Werte aus dem Bereich Leistung, die Windows nachweislich liest
   (etwa Wartezeit beim Herunterfahren, Menüverzögerung). Jeder
   zeigt den gemessenen Wert vorher und nachher. Ob der Rechner
@@ -411,8 +420,7 @@ Datei. Neues Jahr, neuer Ordner.
 ----------------------------------------------------------------
 
   LIGHT     Nur eindeutiger Ballast (Clipchamp, Bing-Apps,
-            Solitaire, Feedback-Hub, Office-Hub, Teams privat,
-            Cortana, Tipps).
+            Solitaire, Feedback-Hub, Office-Hub, Cortana, Tipps).
 
   STANDARD  Zusätzlich Karten, Kontakte, Kurznotizen, Skype,
             Phone Link, Media Player, Filme und TV, neues
@@ -421,7 +429,8 @@ Datei. Neues Jahr, neuer Ordner.
 
   MAXIMUM   Zusätzlich Fotos, Kamera, Paint, Snipping Tool,
             Mail und Kalender, Remotedesktop, Schnellhilfe,
-            Edge. Hier bitte vorher Ersatzprogramme
+            Teams (privat und geschäftlich), Edge. Hier bitte
+            vorher Ersatzprogramme
             installieren.
 
   CUSTOM    Jede App einzeln mit J/N entscheiden.
@@ -454,7 +463,7 @@ oder PowerShell ihn dort hingeschrieben hat.
 Der Zweig HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\
 Policies\... gehört NICHT dazu. Werte dort sperren nichts.
 
-STAND: Von 522 Punkten liegen 259 im Richtlinienzweig. 21
+STAND: Von 520 Punkten liegen 259 im Richtlinienzweig. 21
 sperren einen sichtbaren Schalter, 16 davon stehen nur unter
 Zusatz. In den Profilen sperren fünf. Die ersten drei haben eine
 nicht sperrende Entsprechung im Katalog, die für dein eigenes

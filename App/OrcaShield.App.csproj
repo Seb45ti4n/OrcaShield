@@ -18,10 +18,10 @@
     <Description>Datenschutz für Windows 11</Description>
     <Company>OrcaShield</Company>
     <Copyright>OrcaShield-Mitwirkende</Copyright>
-    <Version>1.0.0-beta</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0 Public Beta</InformationalVersion>
+    <Version>1.0.1-beta</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <InformationalVersion>1.0.1 Public Beta</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>

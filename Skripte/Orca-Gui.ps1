@@ -106,6 +106,7 @@ function Get-OrcaGuiDaten {
         versionDatum = $versionDatum
         aufgabe  = $Global:OrcaAufgabeWaechter
         bereinigungAktiv = $(if ($st) { [bool]$st.BereinigungAktiv } else { $false })
+        schattenkopienAktiv = $(if ($st) { [bool]$st.SchattenkopienLoeschen } else { $false })
         waechterAktiv = [bool](Get-OrcaWaechterAufgabe).Aktiv
         gemessen = (Get-Date -Format 'dd.MM.yyyy HH:mm')
         system   = "$($ed.Anzeige) · $($ed.Kanon) · Build $($ed.Build)"
@@ -222,7 +223,7 @@ function Get-OrcaGuiVorgaenge {
 function Get-OrcaGuiBestaetigung {
     param(
         [string[]]$Ein = @(), [string[]]$Aus = @(),
-        [string]$Waechter = '', [string]$Bereinigung = '',
+        [string]$Waechter = '', [string]$Bereinigung = '', [string]$Schattenkopien = '',
         [string[]]$BereicheAus = @(), [string[]]$BereicheAn = @(),
         [string[]]$Sammler = @(), [string]$SammlerRichtung = '',
         [string[]]$Apps = @(), [switch]$Geraetekennung,
@@ -250,6 +251,10 @@ function Get-OrcaGuiBestaetigung {
     $umschalten = { param($w) if ($w -eq 'ein') { & $sp 'einschalten' 'turn on' } else { & $sp 'ausschalten' 'turn off' } }
     if ($Waechter)    { [void]$zeilen.Add("$(& $sp 'Wächter' 'Watcher') - $(& $umschalten $Waechter)") }
     if ($Bereinigung) { [void]$zeilen.Add("$(& $sp 'Bereinigung beim Herunterfahren' 'Cleanup at shutdown') - $(& $umschalten $Bereinigung)") }
+    if ($Schattenkopien) {
+        [void]$zeilen.Add("$(& $sp 'Schattenkopien beim Herunterfahren löschen' 'Delete shadow copies at shutdown') - $(& $umschalten $Schattenkopien)")
+        if ($Schattenkopien -eq 'ein') { [void]$risiken.Add((& $sp 'Ältere Dateiversionen und Wiederherstellungspunkte werden bei jedem Herunterfahren endgültig gelöscht' 'Older file versions and restore points are permanently deleted at every shutdown')) }
+    }
     $bereich = { param($n) $b = @($Global:OrcaWaechterBereiche | Where-Object { $_.Name -eq $n })[0]; if ($b) { & $kt $b.Anzeige } else { $n } }
     foreach ($n in @($BereicheAus | Where-Object { $_ })) { [void]$zeilen.Add("$(& $sp 'Prüfbereich' 'Check area') $(& $bereich $n) - $(& $sp 'ausschalten' 'turn off')") }
     foreach ($n in @($BereicheAn  | Where-Object { $_ })) { [void]$zeilen.Add("$(& $sp 'Prüfbereich' 'Check area') $(& $bereich $n) - $(& $sp 'einschalten' 'turn on')") }
@@ -343,6 +348,7 @@ function Invoke-OrcaGuiAutomatik {
     param(
         [ValidateSet('', 'ein', 'aus')][string]$Waechter = '',
         [ValidateSet('', 'ein', 'aus')][string]$Bereinigung = '',
+        [ValidateSet('', 'ein', 'aus')][string]$Schattenkopien = '',
         [string[]]$BereicheAus = @(),
         [string[]]$BereicheAn = @()
     )
@@ -419,6 +425,13 @@ function Invoke-OrcaGuiAutomatik {
             Write-OrcaLog -Level FEHLER -Source 'GUI' -Message "Bereinigung $Bereinigung fehlgeschlagen: $($_.Exception.Message)"
         }
     }
+
+    if ($Schattenkopien) {
+        $gespeichert = Set-OrcaStateFeld -Name 'SchattenkopienLoeschen' -Wert ($Schattenkopien -eq 'ein')
+        $ok = $gespeichert -and ([bool](Get-OrcaState).SchattenkopienLoeschen -eq ($Schattenkopien -eq 'ein'))
+        & $neu 'schattenkopien' $Schattenkopien $ok $(if ($ok) { 'Gesetzt' } else { 'Fehler' }) $(if ($ok) { '' } else { 'Zustandsdatei nicht geschrieben' })
+        Write-OrcaLog -Level $(if ($ok) { 'OK' } else { 'FEHLER' }) -Source 'GUI' -Message "Schattenkopien beim Herunterfahren löschen: $Schattenkopien"
+    }
     Write-Progress -Activity 'Automatik' -Completed
 
     $vorgaenge = @()
@@ -472,7 +485,13 @@ function Invoke-OrcaGuiAnwenden {
     $vorhanden = @(Get-ChildItem -LiteralPath $Global:OrcaBackup -Directory -Filter 'Registry-Sicherung_*' -ErrorAction SilentlyContinue)
     if ($vorhanden.Count -eq 0) {
         $sich = New-OrcaRegistryBackup
-        if (-not $sich.Erfolg) { Write-OrcaLog -Level WARN -Source 'GUI' -Message "Registry-Sicherung unvollständig: $($sich.Grund)" }
+        if (-not $sich.Erfolg) {
+            Write-OrcaLog -Level FEHLER -Source 'GUI' -Message "Anwenden abgebrochen: Registry-Sicherung unvollständig ($($sich.Ok) gesichert, $($sich.Fehler) fehlgeschlagen) $($sich.Grund)"
+            if ($sich.Pfad -and (Test-Path -LiteralPath $sich.Pfad)) {
+                Move-Item -LiteralPath $sich.Pfad -Destination (Join-Path $Global:OrcaBackup ('Unvollstaendig_' + (Split-Path $sich.Pfad -Leaf))) -ErrorAction SilentlyContinue
+            }
+            return [ordered]@{ simulation = [bool]$Global:OrcaSimulationAktiv; abgebrochen = "Die Registry-Sicherung vor dem ersten Anwenden ist unvollständig ($($sich.Fehler) Zweige nicht gesichert). Es wurde nichts geändert."; punkte = @(); vorgaenge = @() }
+        }
     }
 
     $nr = 0

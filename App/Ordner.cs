@@ -31,10 +31,21 @@ namespace OrcaShield
                 // Eine vorab angelegte Verzeichnisverknüpfung (ProgramData lässt jedes Konto Ordner
                 // anlegen) wird entfernt – nur die Verknüpfung, nie ihr Ziel.
                 if (Directory.Exists(daten) && IstVerknuepfung(daten)) Directory.Delete(daten, false);
+                string beiseite = null;
                 if (Directory.Exists(daten) && !Sicher(daten))
-                    Directory.Move(daten, daten + ".unsicher-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+                {
+                    if (BesitzerGeschuetzt(daten)) Directory.SetAccessControl(daten, OrcaRechte());
+                    if (!Sicher(daten))
+                    {
+                        beiseite = daten + ".unsicher-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                        Directory.Move(daten, beiseite);
+                    }
+                }
                 if (!Directory.Exists(daten)) Directory.CreateDirectory(daten, OrcaRechte());
                 if (!Sicher(daten)) throw new UnauthorizedAccessException("Der Datenordner von OrcaShield lässt sich nicht schützen: " + daten);
+                // Vermerk für die Meldung beim nächsten Programmstart (Programm.MeldeBeiseite) –
+                // das Setup legt den Ordner unsichtbar an und kann selbst nichts zeigen.
+                if (beiseite != null) File.WriteAllText(Path.Combine(daten, BeiseiteVermerk), beiseite);
                 return _basis = daten;
             }
         }
@@ -57,6 +68,27 @@ namespace OrcaShield
             return o;
         }
 
+        internal const string BeiseiteVermerk = "beiseitegelegt.txt";
+
+        // Dieselben Konten, die Test-OrcaOrdnerRechte der Engine als Schreiber zulässt
+        // ($Global:OrcaErlaubteSchreiber in Orca-Common.ps1) – eine Definition von „sicher“.
+        private static readonly SecurityIdentifier TrustedInstaller =
+            new SecurityIdentifier("S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464");
+        private static readonly SecurityIdentifier ErstellerBesitzer = new SecurityIdentifier(WellKnownSidType.CreatorOwnerSid, null);
+
+        private static bool DarfSchreiben(IdentityReference wer) =>
+            Admins.Equals(wer) || SystemKonto.Equals(wer) || TrustedInstaller.Equals(wer) || ErstellerBesitzer.Equals(wer);
+
+        private static bool BesitzerGeschuetzt(string ordner)
+        {
+            try
+            {
+                var b = Directory.GetAccessControl(ordner).GetOwner(typeof(SecurityIdentifier));
+                return Admins.Equals(b) || SystemKonto.Equals(b) || TrustedInstaller.Equals(b);
+            }
+            catch { return false; }
+        }
+
         private static bool IstVerknuepfung(string pfad)
         {
             try { return (File.GetAttributes(pfad) & FileAttributes.ReparsePoint) != 0; } catch { return true; }
@@ -76,7 +108,8 @@ namespace OrcaShield
             return r;
         }
 
-        // Sicher = Besitzer Administratoren oder SYSTEM, und niemand sonst darf schreiben, löschen oder Rechte ändern.
+        // Sicher = Besitzer Administratoren, SYSTEM oder TrustedInstaller, und schreiben, löschen oder
+        // Rechte ändern dürfen nur die Konten aus DarfSchreiben.
         internal static bool Sicher(string ordner)
         {
             const FileSystemRights schreiben = FileSystemRights.WriteData | FileSystemRights.AppendData |
@@ -84,12 +117,11 @@ namespace OrcaShield
                 FileSystemRights.DeleteSubdirectoriesAndFiles | FileSystemRights.ChangePermissions | FileSystemRights.TakeOwnership;
             try
             {
+                if (!BesitzerGeschuetzt(ordner)) return false;
                 var acl = Directory.GetAccessControl(ordner);
-                var besitzer = acl.GetOwner(typeof(SecurityIdentifier));
-                if (!Admins.Equals(besitzer) && !SystemKonto.Equals(besitzer)) return false;
                 foreach (FileSystemAccessRule r in acl.GetAccessRules(true, true, typeof(SecurityIdentifier)))
                     if (r.AccessControlType == AccessControlType.Allow && (r.FileSystemRights & schreiben) != 0
-                        && !Admins.Equals(r.IdentityReference) && !SystemKonto.Equals(r.IdentityReference)) return false;
+                        && !DarfSchreiben(r.IdentityReference)) return false;
                 return true;
             }
             catch { return false; }

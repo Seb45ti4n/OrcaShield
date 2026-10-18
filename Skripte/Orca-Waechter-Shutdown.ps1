@@ -8,6 +8,10 @@ Write-OrcaLog -Level INFO -Source 'SHUTDOWN' -Message '--- Wächter (Herunterfah
 $startZeit = Get-Date
 
 $state = Get-OrcaState
+if (-not $state -and $Global:OrcaStateUnlesbar) {
+    Write-OrcaLog -Level FEHLER -Source 'SHUTDOWN' -Message 'Zustandsdatei unlesbar - Bereinigung übersprungen'
+    exit 1
+}
 if (-not $state -or -not $state.BereinigungAktiv) {
     Write-OrcaLog -Level SKIP -Source 'SHUTDOWN' -Message 'Bereinigung ist nicht aktiviert - nichts zu tun'
     exit 0
@@ -124,21 +128,15 @@ Invoke-OrcaSchritt -Name 'Papierkorb leeren' -Aktion {
     return @{ Weg = $weg; Rest = $rest; Text = 'Eintraege' }
 }
 
-# ==============================================================
-#  2. SCHATTENKOPIEN LÖSCHEN
-#     Schattenkopien können ältere Versionen gelöschter
-#     Dateien enthalten und machen das Löschen wirkungslos.
-#     Über die Windows-Schnittstelle statt über vssadmin - siehe
-#     Remove-OrcaSchattenkopien in Orca-Common.ps1. Ist der
-#     Computerschutz aus (SYS001), gibt es hier meist nichts zu tun.
-# ==============================================================
-Invoke-OrcaSchritt -Name 'Volumeschattenkopien löschen' -Aktion {
-    $r = Remove-OrcaSchattenkopien
-    if ($r.Nachher -gt 0 -and $r.Nachher -eq $r.Vorher) {
-        throw "keine der $($r.Vorher) Schattenkopien ließ sich löschen: $($r.Grund)"
+if ($state.SchattenkopienLoeschen) {
+    Invoke-OrcaSchritt -Name 'Volumeschattenkopien löschen' -Aktion {
+        $r = Remove-OrcaSchattenkopien
+        if ($r.Nachher -gt 0 -and $r.Nachher -eq $r.Vorher) {
+            throw "keine der $($r.Vorher) Schattenkopien ließ sich löschen: $($r.Grund)"
+        }
+        return @{ Weg = ($r.Vorher - $r.Nachher); Rest = $r.Nachher
+                  Text = $(if ($r.Nachher -gt 0) { $r.Grund } else { 'Schattenkopien' }) }
     }
-    return @{ Weg = ($r.Vorher - $r.Nachher); Rest = $r.Nachher
-              Text = $(if ($r.Nachher -gt 0) { $r.Grund } else { 'Schattenkopien' }) }
 }
 
 # ==============================================================

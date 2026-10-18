@@ -181,7 +181,32 @@ $Global:PsimAttrappenBlock = {
 
     function Global:Get-OrcaState {
         # PSIM-ATTRAPPE
+        $Global:OrcaStateUnlesbar = $false
         return $Global:PsimZustand
+    }
+
+    function Global:Invoke-OrcaMitSperre {
+        # PSIM-ATTRAPPE - keine Systemsperre in der Simulation
+        param([Parameter(Mandatory)][scriptblock]$Aktion, [int]$Sekunden = 15)
+        return (& $Aktion)
+    }
+
+    function Global:Move-OrcaDateiErsetzt {
+        # PSIM-ATTRAPPE - Nebendatei aus der Simulationsablage übernehmen
+        param([Parameter(Mandatory)][string]$Ziel)
+        $inhalt = $Global:PsimDateien["$Ziel.neu"]
+        $Global:PsimDateien[$Ziel] = $inhalt
+        Add-PsimVorgang -Art 'DATEI-ERSETZEN' -Ziel $Ziel -Wert 'aus Nebendatei'
+        if ($Ziel -eq $Global:OrcaBaseline) {
+            try {
+                $roh = $inhalt | ConvertFrom-Json
+                $tab = @{}
+                foreach ($p in $roh.PSObject.Properties) { $tab[$p.Name] = $p.Value }
+                $Global:PsimGrundzustand = @{ Da = $true; Lesbar = $true; Tabelle = $tab; Grund = '' }
+            } catch {
+                Add-PsimVorgang -Art 'HINWEIS' -Ziel 'Grundzustand' -Wert "JSON nicht lesbar: $($_.Exception.Message)"
+            }
+        }
     }
 
     function Global:Get-OrcaBaselineStand {
@@ -278,6 +303,12 @@ $Global:PsimAttrappenBlock = {
         Add-PsimVorgang -Art 'LOESCHEN' -Ziel $z -Zusatz $(if ($Recurse) { 'mit Unterobjekten' } else { '' })
         # Registry-Schlüssel als entfernt merken (Nachprüfung über Test-OrcaRegSchluessel)
         if ($Global:PsimSchluesselWeg -and $z -match '^(HKLM|HKCU|HKU|HKCR|Registry)::?') { $Global:PsimSchluesselWeg[$z] = $true }
+    }
+
+    function Global:Remove-OrcaEintragSicher {
+        param([Parameter(Mandatory)][string]$Pfad)
+        Add-PsimVorgang -Art 'LOESCHEN' -Ziel $Pfad -Zusatz 'über Handle'
+        return 0
     }
 
     function Global:New-ItemProperty {
@@ -575,6 +606,12 @@ $Global:PsimAttrappenBlock = {
             return @{ Zeit = 'Simulation'; Laenge = $t.Length }
         }
         return (& $Global:PsimEcht['Get-OrcaHostsKennung'])
+    }
+
+    function Global:Write-OrcaHostsText {
+        param([Parameter(Mandatory)][AllowEmptyString()][string]$Text)
+        $Global:PsimDateien[$Global:OrcaHostsDatei] = $Text
+        Add-PsimVorgang -Art 'DATEI-SCHREIBEN' -Ziel $Global:OrcaHostsDatei -Wert ("{0} Zeichen" -f $Text.Length)
     }
 
     function Global:Read-OrcaHostsText {

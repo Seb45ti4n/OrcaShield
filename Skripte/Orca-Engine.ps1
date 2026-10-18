@@ -596,7 +596,7 @@ function Save-OrcaBaseline {
     }
 
     try {
-        $tab | ConvertTo-Json -Depth 6 | Set-Content -Path $Global:OrcaBaseline -Encoding UTF8 -ErrorAction Stop
+        Invoke-OrcaMitSperre { Write-OrcaJsonDatei -Ziel $Global:OrcaBaseline -Inhalt $tab } | Out-Null
         Clear-OrcaBaselineCache
         Write-OrcaLog -Level OK -Source 'BASELINE' `
             -Message "Grundzustand gemessen: $neu neue Einträge, $($tab.Count) insgesamt"
@@ -958,6 +958,10 @@ function Reset-OrcaSetting {
                     return @{ Erfolg = $true; Grund = "unbekannter Startmodus '$modus' - Dienst unverändert gelassen" }
                 }
                 Set-Service -Name $Setting.Wert -StartupType $modus -ErrorAction Stop
+                if ($modus -eq 'Automatic') {
+                    Start-Service -Name $Setting.Wert -ErrorAction SilentlyContinue
+                    return @{ Erfolg = $true; Grund = "Startmodus auf $modus zurückgestellt und Dienst gestartet" }
+                }
                 return @{ Erfolg = $true; Grund = "Startmodus auf $modus zurückgestellt" }
             }
 
@@ -2347,7 +2351,26 @@ function Get-OrcaHostsKennung {
 }
 
 function Read-OrcaHostsText {
-    return [IO.File]::ReadAllText($Global:OrcaHostsDatei)
+    $bytes = [IO.File]::ReadAllBytes($Global:OrcaHostsDatei)
+    try {
+        $text = (New-Object System.Text.UTF8Encoding($false, $true)).GetString($bytes)
+        $Global:OrcaHostsKodierung = 'UTF8'
+        if ($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1); $Global:OrcaHostsKodierung = 'UTF8BOM' }
+        return $text
+    } catch {
+        $Global:OrcaHostsKodierung = 'ANSI'
+        return [Text.Encoding]::Default.GetString($bytes)
+    }
+}
+
+function Write-OrcaHostsText {
+    param([Parameter(Mandatory)][AllowEmptyString()][string]$Text)
+    $kod = switch ($Global:OrcaHostsKodierung) {
+        'ANSI'    { [Text.Encoding]::Default }
+        'UTF8BOM' { New-Object System.Text.UTF8Encoding $true }
+        default   { New-Object System.Text.UTF8Encoding $false }
+    }
+    [IO.File]::WriteAllText($Global:OrcaHostsDatei, $Text, $kod)
 }
 
 function Read-OrcaHosts {
@@ -2489,7 +2512,6 @@ function Write-OrcaHosts {
         } | Select-Object -Unique)
         if ($rueck.Count -gt 0) {
             [void]$behalten.Add('')
-            # Nur ASCII: Die Hosts-Datei wird als ASCII geschrieben.
             [void]$behalten.Add('# ===== Von OrcaShield zurueckgegeben =====')
             foreach ($l in $rueck) { [void]$behalten.Add($l) }
         }
@@ -2512,7 +2534,7 @@ function Write-OrcaHosts {
         $geschrieben = $false; $letzterFehler = ''
         for ($versuch = 1; $versuch -le 30 -and -not $geschrieben; $versuch++) {
             try {
-                Set-Content -LiteralPath $Global:OrcaHostsDatei -Value $text -NoNewline -Encoding ASCII -Force -ErrorAction Stop
+                Write-OrcaHostsText -Text $text
                 $geschrieben = $true
             } catch {
                 $letzterFehler = $_.Exception.Message

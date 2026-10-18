@@ -96,7 +96,11 @@ function Close-OrcaWaechter {
 # --------------------------------------------------------------
 $state = Get-OrcaState
 if (-not $state) {
-    Write-OrcaWZeile 'zustand' "Zustandsdatei fehlt ($($Global:OrcaState)) - OrcaShield neu einrichten" -Stufe ALARM
+    if ($Global:OrcaStateUnlesbar) {
+        Write-OrcaWZeile 'zustand' "Zustandsdatei unlesbar ($($Global:OrcaState)) - letzte gute Fassung liegt daneben als .vorher" -Stufe ALARM
+    } else {
+        Write-OrcaWZeile 'zustand' "Zustandsdatei fehlt ($($Global:OrcaState)) - OrcaShield neu einrichten" -Stufe ALARM
+    }
     Close-OrcaWaechter
     exit 1
 }
@@ -305,6 +309,10 @@ if ('NET005' -in @($state.AktiveEinstellungen) -and (Test-OrcaWBereich 'kennung'
 #  6. HERUNTERFAHREN-WÄCHTER
 # --------------------------------------------------------------
 if ($state.BereinigungAktiv) {
+    if ($null -eq $state.SchattenkopienLoeschen) {
+        Write-OrcaWZeile 'herunterfahren' 'Schattenkopien werden seit 1.0.1 nur noch mit eigenem Schalter gelöscht (Überwachung & Automatik) - derzeit aus' -Stufe HINWEIS
+        Set-OrcaStateFeld -Name 'SchattenkopienLoeschen' -Wert $false | Out-Null
+    }
     if (Test-OrcaWBereich 'herunterfahren') {
         try {
             $stand = Get-OrcaShutdownRegistrierung

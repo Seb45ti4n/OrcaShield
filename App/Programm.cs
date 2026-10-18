@@ -14,7 +14,7 @@ namespace OrcaShield
                 a.Equals("/" + n, StringComparison.OrdinalIgnoreCase) ||
                 a.Equals("--" + n, StringComparison.OrdinalIgnoreCase));
 
-            bool simulation = Schalter("simulation") || (!IstInstalliert() && !Schalter("echt"));
+            bool simulation = Schalter("simulation") || (!IstInstalliert() && !(Schalter("echt") && OrdnerGeschuetzt()));
             bool testanschluss = Schalter("testanschluss") && !IstInstalliert();
 
             Application.EnableVisualStyles();
@@ -73,8 +73,27 @@ namespace OrcaShield
                 MessageBox.Show("OrcaShield startet nicht: " + ex.Message, "OrcaShield", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+            MeldeBeiseite();
             Application.Run(new Hauptfenster(simulation, testanschluss, browserArgs));
             GC.KeepAlive(einmal);
+        }
+
+        private static void MeldeBeiseite()
+        {
+            try
+            {
+                string vermerk = Path.Combine(Ordner.Basis(), Ordner.BeiseiteVermerk);
+                if (!File.Exists(vermerk)) return;
+                string alt = File.ReadAllText(vermerk).Trim();
+                Protokoll("Datenordner war ungeschützt und wurde beiseitegelegt: " + alt);
+                MessageBox.Show("Der Datenordner von OrcaShield gehörte einem Konto ohne Administratorrechte und war dadurch veränderbar. " +
+                    "Er wurde nicht übernommen, sondern beiseitegelegt:\n\n" + alt +
+                    "\n\nAusgangszustand, Einstellungen und Sicherungspunkte daraus gelten nicht mehr. OrcaShield misst ab jetzt neu. " +
+                    "Hat OrcaShield auf diesem Rechner schon Einstellungen gesetzt, ist der neu gemessene Ausgangszustand bereits der veränderte.",
+                    "OrcaShield", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                File.Move(vermerk, vermerk + ".gemeldet-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            }
+            catch (Exception ex) { Protokoll("Vermerk zum beiseitegelegten Datenordner nicht lesbar: " + ex.Message); }
         }
 
         private static void Unbehandelt(Exception ex, bool weiter)
@@ -103,6 +122,14 @@ namespace OrcaShield
 
         // Muss mit AppMutex in Installer\OrcaShield.iss übereinstimmen.
         internal const string SperrName = "Global\\OrcaShield.Programm";
+
+        private static bool OrdnerGeschuetzt()
+        {
+            string ich = AppDomain.CurrentDomain.BaseDirectory;
+            string skripte = Path.Combine(ich, "Skripte");
+            // Kein Protokoll hier: Es liefe vor Ordner.Testprofil und legte die Basis falsch fest.
+            return Ordner.Sicher(ich) && (!Directory.Exists(skripte) || Ordner.Sicher(skripte));
+        }
 
         // Installiert = die EXE liegt unter %ProgramFiles% (dort darf nur ein Administrator schreiben).
         internal static bool IstInstalliert()

@@ -2,9 +2,9 @@
 
 **Datenschutz-Härtung für Windows 11 – gemessen, nachgeprüft, umkehrbar.**
 
-[English](README.md) · Version **1.0.0 Public Beta** · Windows 11 (x64 und ARM64) · MIT-Lizenz
+[English](README.md) · Version **1.0.1 Public Beta** · Windows 11 (x64 und ARM64) · MIT-Lizenz
 
-OrcaShield schaltet ab, was Windows über dich sendet, hält es abgeschaltet, beseitigt beim Herunterfahren Spuren und schützt vor der Microsoft-Gerätekennung – nach einer Regel über allem: **erst messen, dann handeln, dann nachprüfen.** Nichts wird ohne deine Bestätigung geändert, jede Änderung lässt sich zurücknehmen, und OrcaShield selbst sendet nichts.
+OrcaShield schaltet ab, was Windows über dich sendet, hält es abgeschaltet, beseitigt beim Herunterfahren Spuren und schützt vor der Microsoft-Gerätekennung – nach einer Regel über allem: **erst messen, dann handeln, dann nachprüfen.** Nichts wird ohne deine Bestätigung geändert – schaltest du den Wächter oder die Bereinigung ein, handeln sie danach bei jeder Anmeldung bzw. jedem Herunterfahren selbst. Jede Änderung lässt sich zurücknehmen, und OrcaShield selbst sendet nichts.
 
 > **Das ist eine Beta.** Probiere sie bitte auf einem Rechner aus, auf dem du mit einem Problem leben kannst, lies die Warnungen in der App und melde Auffälligkeiten über die Issues dieses Projekts.
 
@@ -12,16 +12,17 @@ OrcaShield schaltet ab, was Windows über dich sendet, hält es abgeschaltet, be
 
 ## Funktionen
 
-### Katalog – 522 Einstellungen
+### Katalog – 520 Einstellungen
 Telemetrie, Werbe-ID, Copilot und Recall, Standort, Websuche im Startmenü, Sprach- und Tippdaten, Geräteinventur, Office-Cloudanbindung, Kontosynchronisierung, Cloud-Zwischenablage, Fehlerberichte, Aktivitätsverlauf, App-Berechtigungen, Netzwerk- und TLS-Härtung, Verhalten von Windows Update, Defender-Optionen und mehr.
 
-- **Jeder Wert ist belegt:** Richtlinien an den Richtliniendefinitionen von Windows (ADMX: Benutzer oder Computer, unterstützte Versionen, Editionen, ob ein Schalter in den Einstellungen gesperrt wird), alle anderen Werte an der Programmdatei von Windows, die sie liest. Was sich nicht belegen lässt, steht nicht im Katalog, sondern unter **„Nicht unterstützt“** mit Begründung (145 bekannte Optionen).
+- **Jeder Wert ist belegt:** Richtlinien an den Richtliniendefinitionen von Windows (ADMX: Benutzer oder Computer, unterstützte Versionen, Editionen, ob ein Schalter in den Einstellungen gesperrt wird), alle anderen Werte an der Programmdatei von Windows, die sie liest. Was sich nicht belegen lässt, steht nicht im Katalog, sondern unter **„Nicht unterstützt“** mit Begründung (147 bekannte Optionen).
 - **Drei Schutzstufen**, aufeinander aufbauend, je Bereich oder für alles:
   - **Basis** (39 Einstellungen, grün) – das Wichtigste, ohne Nebenwirkungen.
   - **Erweitert** (237, gelb) – alles ohne spürbare Nachteile. Empfohlen.
-  - **Maximal** (336, rot) – höchster Datenschutz, auch mit spürbarer Folge.
-- **Zusatz** (178 Einstellungen, in keiner Stufe): Punkte, die Programme abschneiden, einen Schalter für alle Konten sperren oder **den Schutz senken** (etwa automatische Updates, SmartScreen oder Teile von Defender aus). Nur einzeln einschaltbar, Vorgabe Nein; Sicherheitsrisiken rot mit ⚠ und Pflichtwarnung.
-- **Experimentell** (8 Einstellungen): Leistungswerte, die Windows nachweislich liest, jeweils mit gemessenem Wert vorher und nachher.
+  - **Maximal** (327, rot) – höchster Datenschutz, auch mit spürbarer Folge.
+- **Zusatz** (186 Einstellungen, in keiner Stufe): Punkte, die Programme abschneiden, einen Schalter für alle Konten sperren oder **den Schutz senken** (etwa automatische Updates, SmartScreen, Teile von Defender oder die virtualisierungsbasierte Sicherheit aus). Nur einzeln einschaltbar, Vorgabe Nein; Sicherheitsrisiken rot mit ⚠ und Pflichtwarnung.
+- **Experimentell** (7 Einstellungen): Leistungswerte, die Windows nachweislich liest, jeweils mit gemessenem Wert vorher und nachher.
+- Zusammen: 520 = 327 in den Stufen + 186 Zusatz + 7 Experimentell. Die 147 Optionen unter „Nicht unterstützt“ zählen nicht dazu – OrcaShield setzt sie nicht.
 - Zu jeder Einstellung: Erklärung in Alltagssprache, technische Angaben (Pfad, Wert, Soll/Ist) und der **PowerShell-Befehl**, mit dem du sie selbst setzt oder zurücknimmst.
 
 ### Vorschau und doppelte Bestätigung
@@ -35,7 +36,7 @@ Nichts wird gesetzt, bevor du die Vorschau („Prüfen & anwenden“) bestätigt
 ### Wächter (optional, anfangs aus)
 Läuft nach jeder Anmeldung, sichtbar, mit Administratorrechten, und prüft:
 - ob alle aktiven Einstellungen noch stehen – Funktionsupdates stellen gern zurück; Abweichungen werden zurückgestellt und protokolliert,
-- entfernte Apps, die zurückgekommen sind,
+- entfernte Apps, die zurückgekommen sind – sie werden erneut entfernt, Microsoft Edge auch, wenn du Edge entfernt hast,
 - **Defender und Firewall**: Echtzeitschutz, Manipulationsschutz, **neue Ausnahmen** (der häufigste Trick von Schadsoftware), weitere Virenschutzprogramme, Richtlinien gegen Defender, veraltete Signaturen, neue Funde,
 - ob die Bereinigung beim Herunterfahren wirklich gelaufen ist (gegen das Ereignisprotokoll),
 - die eigene Aufgabe und die Schreibrechte seiner Ordner,
@@ -43,10 +44,14 @@ Läuft nach jeder Anmeldung, sichtbar, mit Administratorrechten, und prüft:
 
 Das Fenster ist grün und schließt nach wenigen Sekunden, wenn alles sauber ist, gelb bei Hinweisen, rot bei Alarm (bleibt offen).
 
-### Bereinigung beim Herunterfahren (optional, anfangs aus)
-Beseitigt bei jedem Herunterfahren und Neustart Spuren: Papierkorb, Schattenkopien, Miniaturansichten, Diagnoseprotokolle, temporäre Dateien, Absturzabbilder, Prefetch, zuletzt verwendete Dateien, Explorer-Verläufe und ShellBags; die Auslagerungsdatei wird beim Herunterfahren geleert. Nach der nächsten Anmeldung folgt ein TRIM-Durchlauf, damit die SSD die gelöschten Daten wirklich verwirft.
+Der Wächter arbeitet für das Konto, mit dem OrcaShield eingerichtet wurde. Einstellungen anderer Konten auf demselben Rechner hält er nicht; die Bereinigung beim Herunterfahren läuft dagegen für alle Profile.
 
-> ⚠ Das **löscht endgültig**: Bei jedem Herunterfahren wird der Papierkorb geleert und Schattenkopien (ältere Fassungen von Dateien) werden entfernt. Nur einschalten, wenn du das willst.
+### Bereinigung beim Herunterfahren (optional, anfangs aus)
+Beseitigt bei jedem Herunterfahren und Neustart Spuren: Papierkorb, Miniaturansichten, Diagnoseprotokolle, temporäre Dateien, Absturzabbilder, Prefetch, zuletzt verwendete Dateien, Explorer-Verläufe und ShellBags; die Auslagerungsdatei wird beim Herunterfahren geleert. Nach der nächsten Anmeldung folgt auf C: ein TRIM-Durchlauf: Die SSD erfährt, welche Bereiche frei sind – wann sie die Daten dort tatsächlich löscht, entscheidet das Laufwerk.
+
+Schattenkopien (ältere Fassungen von Dateien, Wiederherstellungspunkte) werden nur mit einem eigenen Schalter gelöscht, Vorgabe aus.
+
+> ⚠ Das **löscht endgültig**: Bei jedem Herunterfahren wird der Papierkorb geleert, mit dem eigenen Schalter auch die Schattenkopien. Nur einschalten, wenn du das willst.
 
 Eingetragen genau so, wie es der Gruppenrichtlinien-Editor tut; Einträge anderer Werkzeuge bleiben unangetastet. Wer sie ausschaltet, schaltet auch das Leeren der Auslagerungsdatei wieder aus.
 
@@ -75,10 +80,10 @@ Deutsch und Englisch (unter „Anpassen“). Das Setup folgt der Sprache von Win
 
 ## Installation
 
-1. `OrcaShield-Setup-1.0.0-Public-Beta.exe` unter **Releases** dieses Projekts herunterladen. Eine Datei für normale PCs (x64) und ARM-Geräte – das Setup wählt selbst.
+1. `OrcaShield-Setup-1.0.1-Public-Beta.exe` unter **Releases** dieses Projekts herunterladen. Eine Datei für normale PCs (x64) und ARM-Geräte – das Setup wählt selbst.
 2. Empfohlen: Prüfsumme mit der im Release angegebenen vergleichen:
    ```powershell
-   Get-FileHash .\OrcaShield-Setup-1.0.0-Public-Beta.exe -Algorithm SHA256
+   Get-FileHash .\OrcaShield-Setup-1.0.1-Public-Beta.exe -Algorithm SHA256
    ```
 3. Setup starten, die Benutzerkontensteuerung mit Ja bestätigen.
 4. OrcaShield über das Startmenü starten. Beim Start misst es den Zustand des Rechners (Bestandsaufnahme) und ändert **nichts**.

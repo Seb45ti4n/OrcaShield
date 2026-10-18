@@ -2,9 +2,9 @@
 
 **Privacy hardening for Windows 11 – measured, verified, reversible.**
 
-[Deutsch](README.de.md) · Version **1.0.0 Public Beta** · Windows 11 (x64 and ARM64) · MIT License
+[Deutsch](README.de.md) · Version **1.0.1 Public Beta** · Windows 11 (x64 and ARM64) · MIT License
 
-OrcaShield turns off what Windows sends about you, keeps it turned off, cleans up traces at shutdown and protects you from the Microsoft device ID – with one rule above everything else: **measure first, then act, then verify.** Nothing is changed without your confirmation, every change can be undone, and OrcaShield itself sends nothing anywhere.
+OrcaShield turns off what Windows sends about you, keeps it turned off, cleans up traces at shutdown and protects you from the Microsoft device ID – with one rule above everything else: **measure first, then act, then verify.** Nothing is changed without your confirmation – once you switch on the watcher or the shutdown cleanup, they act on their own after every sign-in or shutdown. Every change can be undone, and OrcaShield itself sends nothing anywhere.
 
 > **This is a beta.** Please try it on a PC where you can live with a problem, read the warnings in the app, and report anything odd via the GitHub issues of this project.
 
@@ -26,16 +26,17 @@ OrcaShield turns off what Windows sends about you, keeps it turned off, cleans u
 
 ## Features
 
-### Settings catalog – 522 settings
+### Settings catalog – 520 settings
 Telemetry, advertising ID, Copilot and Recall, location, web search in the Start menu, speech and typing data, device inventory, Office cloud connections, account sync, cloud clipboard, error reporting, activity history, app permissions, network and TLS hardening, Windows Update behaviour, Defender options and more.
 
-- **Every value is documented**: policies against the Windows policy definitions (ADMX: user or machine scope, supported versions, editions, whether a switch in Settings gets locked), all other values against the Windows program file that reads them. What cannot be documented is not in the catalog – it is listed under **"Not supported"** with the reason (145 known options).
+- **Every value is documented**: policies against the Windows policy definitions (ADMX: user or machine scope, supported versions, editions, whether a switch in Settings gets locked), all other values against the Windows program file that reads them. What cannot be documented is not in the catalog – it is listed under **"Not supported"** with the reason (147 known options).
 - **Three protection levels**, cumulative, per area or for everything at once:
   - **Basic** (39 settings, green) – the essentials, no side effects.
   - **Extended** (237, yellow) – everything without noticeable drawbacks. Recommended.
-  - **Maximum** (336, red) – highest privacy, including settings with noticeable consequences.
-- **Extra** (178 settings, in no level): settings that cut off programs, lock a switch for all accounts or **lower your protection** (for example turning off automatic updates, SmartScreen or parts of Defender). They can only be switched on one by one, default No; security risks are marked red with ⚠ and a mandatory warning.
-- **Experimental** (8 settings): performance values Windows demonstrably reads, each with the measured value before and after.
+  - **Maximum** (327, red) – highest privacy, including settings with noticeable consequences.
+- **Extra** (186 settings, in no level): settings that cut off programs, lock a switch for all accounts or **lower your protection** (for example turning off automatic updates, SmartScreen, parts of Defender or virtualization-based security). They can only be switched on one by one, default No; security risks are marked red with ⚠ and a mandatory warning.
+- **Experimental** (7 settings): performance values Windows demonstrably reads, each with the measured value before and after.
+- In total: 520 = 327 in the levels + 186 Extra + 7 Experimental. The 147 options under "Not supported" are not part of it – OrcaShield does not set them.
 - For every setting: an explanation in plain language, the technical details (path, value, target/current state) and the **PowerShell command** to set or revert it yourself.
 
 ### Preview and double confirmation
@@ -49,7 +50,7 @@ Nothing is applied before you have checked the preview ("Review & apply"). After
 ### Watcher (optional, off by default)
 Runs after every sign-in, visible, with administrator rights, and checks:
 - that all active settings are still in place – Windows feature updates like to reset things; deviations are restored and logged,
-- removed apps that came back,
+- removed apps that came back – they are removed again, Microsoft Edge too if you removed it,
 - **Defender and firewall**: real-time protection, tamper protection, **new exclusions** (the most common trick of malware), other antivirus products registering, policies disabling Defender, outdated signatures, new detections,
 - whether the shutdown cleanup actually ran (checked against the Windows event log),
 - its own scheduled task and the write permissions of its folders,
@@ -57,10 +58,14 @@ Runs after every sign-in, visible, with administrator rights, and checks:
 
 The window is green and closes after a few seconds when everything is clean, yellow for notes, red for alarms (stays open).
 
-### Cleanup at shutdown (optional, off by default)
-Removes traces at every shutdown and restart: recycle bin, volume shadow copies, thumbnail cache, diagnostic logs, temporary files, crash dumps, prefetch files, recently used files, Explorer history and ShellBags; clears the page file at shutdown. After the next sign-in a TRIM pass follows so the SSD really discards the deleted data.
+The watcher works for the account that set OrcaShield up. Per-account settings of other accounts on the same PC are not kept; the shutdown cleanup, however, runs for all profiles.
 
-> ⚠ This **permanently deletes** data: the recycle bin is emptied and shadow copies (older versions of files) are removed at every shutdown. Only switch it on if that is what you want.
+### Cleanup at shutdown (optional, off by default)
+Removes traces at every shutdown and restart: recycle bin, thumbnail cache, diagnostic logs, temporary files, crash dumps, prefetch files, recently used files, Explorer history and ShellBags; clears the page file at shutdown. After the next sign-in a TRIM pass on C: tells the SSD which areas are free – when it actually erases them is up to the drive.
+
+Volume shadow copies (older versions of files, restore points) are only deleted with a separate switch, off by default.
+
+> ⚠ This **permanently deletes** data: the recycle bin is emptied at every shutdown, and with the separate switch the shadow copies too. Only switch it on if that is what you want.
 
 Registered exactly like a script set via the Group Policy editor; existing entries of other tools stay untouched. Switching it off also turns the page file clearing off again.
 
@@ -101,10 +106,10 @@ A hardening tool never loosens anything on its own.
 
 ## Installation
 
-1. Download `OrcaShield-Setup-1.0.0-Public-Beta.exe` from the **Releases** of this project. One file for normal PCs (x64) and ARM devices – the setup chooses.
+1. Download `OrcaShield-Setup-1.0.1-Public-Beta.exe` from the **Releases** of this project. One file for normal PCs (x64) and ARM devices – the setup chooses.
 2. Optional, recommended: compare the checksum with the one published in the release:
    ```powershell
-   Get-FileHash .\OrcaShield-Setup-1.0.0-Public-Beta.exe -Algorithm SHA256
+   Get-FileHash .\OrcaShield-Setup-1.0.1-Public-Beta.exe -Algorithm SHA256
    ```
 3. Start the setup and confirm the User Account Control prompt.
 4. Start OrcaShield from the Start menu. On start it measures the state of the PC (inventory) and changes **nothing**.

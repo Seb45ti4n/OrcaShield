@@ -860,7 +860,7 @@ document.addEventListener("click", e => {
   if (el) protokoll("klick", beschreibe(el));
 }, true);
 let D = null;
-const SEITEN_VERSION = "1.0.0 Public Beta";
+const SEITEN_VERSION = "1.0.1 Public Beta";
 let PRODUKT = SEITEN_VERSION, PUNKTE = [], KATS = [], KAT = {};
 function datenUebernehmen(d) {
   D = d || null;
@@ -1509,7 +1509,8 @@ const ERKLAERUNG = {
  "herunterfahren": {
   "titel": "Bereinigung beim Herunterfahren",
   "absaetze": [
-   "Bei jedem Herunterfahren und Neustart beseitigt es Datenspuren: Papierkorb, Schattenkopien, Miniaturansichten, Diagnoseprotokolle, temporäre Dateien, Absturzabbilder, Prefetch, zuletzt verwendete Dateien, Explorer-Verläufe und die Ordneransichten des Explorers (ShellBags). Die Auslagerungsdatei wird beim Herunterfahren geleert. Nach der nächsten Anmeldung folgt ein TRIM-Durchlauf, damit die SSD die gelöschten Daten wirklich verwirft.",
+   "Bei jedem Herunterfahren und Neustart beseitigt es Datenspuren: Papierkorb, Miniaturansichten, Diagnoseprotokolle, temporäre Dateien, Absturzabbilder, Prefetch, zuletzt verwendete Dateien, Explorer-Verläufe und die Ordneransichten des Explorers (ShellBags). Die Auslagerungsdatei wird beim Herunterfahren geleert. Nach der nächsten Anmeldung folgt auf C: ein TRIM-Durchlauf: Die SSD erfährt, welche Bereiche frei sind. Wann sie die Daten dort tatsächlich löscht, entscheidet das Laufwerk selbst.",
+   "Schattenkopien löscht die Bereinigung nur mit einem eigenen Schalter (Vorgabe aus) - das nimmt Wiederherstellungspunkte und ältere Dateiversionen endgültig.",
    "Schattenkopien entstehen vor allem durch den Computerschutz von Windows: eine pro Tag, mit älteren Fassungen auch gelöschter Dateien. SYS001 schaltet ihn für C: ab, dann entstehen sie gar nicht erst. Gelöscht wird über die Windows-Schnittstelle (Win32_ShadowCopy), nicht über vssadmin - den Befehl \"vssadmin delete shadows /all /quiet\" benutzt Erpressersoftware, und Defender beendet ihn zu Recht.",
    "Gedacht ist das für ein unverschlüsseltes Systemlaufwerk: Es beseitigt Spuren, auch solche, die von verschlüsselten Laufwerken stammen. Deine normalen Dateien unter C:\\Users bleiben natürlich lesbar - gegen den Ausbau der SSD hilft nur eine Verschlüsselung von C:."
   ]
@@ -1705,6 +1706,7 @@ function renderWaechter() {
     <div class="liste-k">
       ${zeile("waechter", "Wächter", `Prüft nach jeder Anmeldung alle Einstellungen und stellt Änderungen wieder her.${D.waechter ? " Zuletzt: " + esc(D.waechter) : ""}`, aWert("waechter"), "assistent")}
       ${zeile("herunterfahren", "Bereinigung beim Herunterfahren", `Entfernt Verläufe, Zwischenspeicher und temporäre Dateien.${D.shutdown ? " Zuletzt: " + esc(D.shutdown) : ""}`, aWert("herunterfahren"), "assistent")}
+      ${zeile("schattenkopien", "Schattenkopien beim Herunterfahren löschen", "Nur zusammen mit der Bereinigung. Löscht ältere Dateiversionen und Wiederherstellungspunkte endgültig.", aWert("schattenkopien"), "assistent")}
     </div>
     <div class="abschnitt" style="margin-top:14px"><h2>Prüfbereiche des Wächters</h2></div>
     <div class="liste-k">${(D.bereiche || []).map(b => zeile(b.name, esc(b.anzeige), esc(b.text), bAn(b.name), "bereich")).join("")}</div>
@@ -2105,8 +2107,9 @@ function aktualisiere() {
   document.getElementById("inhalt").scrollTop = scroll;
 }
 
-// Gemessener Zustand von Wächter und Bereinigung (ältere Messdaten ohne waechterAktiv: Wächter gilt als an)
-const automatikIst = n => n === "waechter" ? (D && D.waechterAktiv !== undefined ? !!D.waechterAktiv : true) : !!(D && D.bereinigungAktiv);
+const automatikIst = n => n === "waechter" ? (D && D.waechterAktiv !== undefined ? !!D.waechterAktiv : true)
+  : n === "schattenkopien" ? !!(D && D.schattenkopienAktiv) : !!(D && D.bereinigungAktiv);
+const AUTO_TITEL = { waechter: "Wächter", herunterfahren: "Bereinigung beim Herunterfahren", schattenkopien: "Schattenkopien beim Herunterfahren löschen" };
 function zeigeDialog(html, fertig, fest = false) {
   const s = document.getElementById("schleier"), d = document.getElementById("dialog");
   d.innerHTML = html; s.classList.add("auf");
@@ -2131,6 +2134,7 @@ function vorschau() {
   for (const p of aus) skript += `\n# ${p.id} ${p.name} – zurück auf den Ausgangszustand\n${befehle(p).zurueck}\n`;
   for (const [n, v] of assistentVorgemerkt) {
     if (n === "waechter") skript += `\n# Anmelde-Wächter ${v ? "einschalten" : "ausschalten"}\n${v ? "Enable" : "Disable"}-ScheduledTask -TaskPath '\\' -TaskName '${D.aufgabe || "OrcaShield-Waechter"}'\n`;
+    else if (n === "schattenkopien") skript += `\n# Schattenkopien beim Herunterfahren ${v ? "löschen" : "nicht mehr löschen"} – OrcaShield vermerkt es in seiner Zustandsdatei\n`;
     else skript += `\n# Herunterfahren-Assistent ${v ? "eintragen" : "austragen"} – über OrcaShield (lokale Gruppenrichtlinie)\n`;
   }
   if (wAus.length || wAn.length) skript += `\n# Prüfbereiche des Wächters – OrcaShield vermerkt sie in seiner Zustandsdatei${wAus.length ? "\n#   ausschalten: " + wAus.join(", ") : ""}${wAn.length ? "\n#   einschalten: " + wAn.join(", ") : ""}\n`;
@@ -2141,7 +2145,7 @@ function vorschau() {
     ${sperr || ns ? `<div class="box">${sperr ? `<b>${sperr}</b> per Richtlinie – der zugehörige Schalter in Windows wird gesperrt. ` : ""}${ns ? `<b>${ns}</b> erfordern einen Neustart.` : ""}</div>` : ""}
     ${ein.length ? `<div class="vorschau-gruppe"><h3>Aktivieren · ${ein.length}</h3><ul>${ein.map(li).join("")}</ul></div>` : ""}
     ${aus.length ? `<div class="vorschau-gruppe"><h3>Zurücksetzen · ${aus.length}</h3><ul>${aus.map(li).join("")}</ul></div>` : ""}
-    ${assistentVorgemerkt.size || wAus.length || wAn.length ? `<div class="vorschau-gruppe"><h3>Überwachung & Automatik</h3><ul>${[...assistentVorgemerkt].map(([n, v]) => `<li><span class="mono"></span><span>${n === "waechter" ? "Wächter" : "Bereinigung beim Herunterfahren"}: ${v ? "ein" : "aus"}</span></li>`).join("")}${[...wAus.map(x => x + ": aus"), ...wAn.map(x => x + ": ein")].map(x => `<li><span class="mono"></span><span>Prüfbereich ${esc(x)}</span></li>`).join("")}</ul></div>` : ""}
+    ${assistentVorgemerkt.size || wAus.length || wAn.length ? `<div class="vorschau-gruppe"><h3>Überwachung & Automatik</h3><ul>${[...assistentVorgemerkt].map(([n, v]) => `<li><span class="mono"></span><span>${AUTO_TITEL[n] || n}: ${v ? "ein" : "aus"}</span></li>`).join("")}${[...wAus.map(x => x + ": aus"), ...wAn.map(x => x + ": ein")].map(x => `<li><span class="mono"></span><span>Prüfbereich ${esc(x)}</span></li>`).join("")}</ul></div>` : ""}
     <div class="code-box"><div class="reiter"><button class="an">PowerShell</button><button class="kopieren" data-a="kopieren">Kopieren</button></div><pre>${esc(skript)}</pre></div>
     <div class="knoepfe"><button class="knopf still" data-a="zu">Zurück</button>${APP && (ein.length || aus.length || assistentVorgemerkt.size || wAus.length || wAn.length)
       ? `<button class="knopf voll" data-a="anwenden">${SIMULATION ? "Simulieren" : "Anwenden"}</button>`
@@ -2272,10 +2276,11 @@ async function anwendenImProgramm() {
   const auto = {
     waechter: assistentVorgemerkt.has("waechter") ? (assistentVorgemerkt.get("waechter") ? "ein" : "aus") : "",
     bereinigung: assistentVorgemerkt.has("herunterfahren") ? (assistentVorgemerkt.get("herunterfahren") ? "ein" : "aus") : "",
+    schattenkopien: assistentVorgemerkt.has("schattenkopien") ? (assistentVorgemerkt.get("schattenkopien") ? "ein" : "aus") : "",
     bereicheAus: [...waechterVorgemerkt].filter(([, v]) => !v).map(([k]) => k),
     bereicheAn: [...waechterVorgemerkt].filter(([, v]) => v).map(([k]) => k),
   };
-  const mitAuto = !!(auto.waechter || auto.bereinigung || auto.bereicheAus.length || auto.bereicheAn.length);
+  const mitAuto = !!(auto.waechter || auto.bereinigung || auto.schattenkopien || auto.bereicheAus.length || auto.bereicheAn.length);
   if (!ein.length && !aus.length && !mitAuto) { toast("Nichts zum Anwenden"); return; }
   protokoll("anwenden", `${SIMULATION ? "Simulation" : "echt"} · ein: ${ein.join(", ") || "–"} · zurück: ${aus.join(", ") || "–"}` + (mitAuto ? ` · Automatik: ${JSON.stringify(auto)}` : ""));
   zeigeDialog(`<h2>Wird angewendet …</h2>
@@ -2289,7 +2294,7 @@ async function anwendenImProgramm() {
   let erg = { simulation: SIMULATION, punkte: [], vorgaenge: [] };
   try {
     erg = await bruecke("anwenden", mitAuto ? { ein, aus, automatik: auto } : { ein, aus }, fort);
-    if (!erg.abgebrochen && erg.automatikAbgebrochen) erg.punkte = [...(erg.punkte || []), ...["waechter", "herunterfahren"].filter(n => assistentVorgemerkt.has(n)).concat([...waechterVorgemerkt.keys()].map(k => "bereich:" + k))
+    if (!erg.abgebrochen && erg.automatikAbgebrochen) erg.punkte = [...(erg.punkte || []), ...["waechter", "herunterfahren", "schattenkopien"].filter(n => assistentVorgemerkt.has(n)).concat([...waechterVorgemerkt.keys()].map(k => "bereich:" + k))
       .map(id => ({ id, richtung: "", ok: false, status: "Fehler", grund: erg.automatikAbgebrochen }))];
   } catch (e) {
     zeigeDialog(`<h2 style="color:var(--rot)">Anwenden fehlgeschlagen</h2><p>${esc(e.message)}</p><p>Es kann sein, dass ein Teil schon gesetzt wurde – die nächste Messung zeigt den Stand.</p>
@@ -2308,10 +2313,10 @@ async function anwendenImProgramm() {
   for (const r of punkte.filter(x => x.status === "Offen")) protokoll("anwenden", `${r.id} noch offen: ${r.grund}`);
   // Erledigte Automatik-Vormerkungen entfernen
   for (const r of gut) {
-    if (r.id === "waechter" || r.id === "herunterfahren") assistentVorgemerkt.delete(r.id);
+    if (r.id in AUTO_TITEL) assistentVorgemerkt.delete(r.id);
     else if (r.id.startsWith("bereich:")) waechterVorgemerkt.delete(r.id.slice(8));
   }
-  const AUTO_NAME = { waechter: "Wächter", herunterfahren: "Bereinigung beim Herunterfahren" };
+  const AUTO_NAME = AUTO_TITEL;
   const nameVon = id => AUTO_NAME[id] || (id.startsWith("bereich:") ? "Prüfbereich " + (((D.bereiche || []).find(b => b.name === id.slice(8)) || {}).anzeige || id.slice(8)) : null) || (PUNKTE.find(p => p.id === id) || {}).name || id;
   const zeile = r => `<li><span class="mono">${esc(r.id in AUTO_NAME || r.id.startsWith("bereich:") ? "" : r.id)}</span><span>${esc(nameVon(r.id))}</span><span class="flags" ${r.ok ? "" : 'style="color:var(--rot)"'}>${esc(r.richtung === "aus" && r.ok && !(r.id in AUTO_NAME) && !r.id.startsWith("bereich:") ? STATUS_TEXT.Zurueckgesetzt
         : r.ok && (r.id in AUTO_NAME || r.id.startsWith("bereich:")) ? (r.richtung === "ein" ? "eingeschaltet und nachgeprüft" : "ausgeschaltet und nachgeprüft") : (STATUS_TEXT[r.status] || r.status))}${(!r.ok || r.status === "Offen") && r.grund ? " – " + esc(r.grund) : ""}</span></li>`;

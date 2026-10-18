@@ -29,8 +29,8 @@ namespace OrcaShield
             {
                 sb.AppendLine();
                 sb.AppendLine(englisch ? "⚠ Please check carefully:" : "⚠ Bitte genau prüfen:");
-                foreach (var r in risiken.Take(HoechstensZeilen)) sb.AppendLine("•  " + r);
-                if (risiken.Count > HoechstensZeilen) sb.AppendLine(weitere(risiken.Count - HoechstensZeilen));
+                if (risiken.Count <= HoechstensZeilen) foreach (var r in risiken) sb.AppendLine("•  " + r);
+                else sb.AppendLine(string.Join("   ·   ", risiken));
             }
             sb.AppendLine();
             if (englisch) sb.Append(simulation ? "Simulation: nothing is written. Continue?" : "Continue?");

@@ -2487,61 +2487,37 @@ $Global:OrcaEinstellungen += New-OrcaSetting -Id 'SYS003' -Name 'Liste zuletzt g
     -Pfad 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer' -Wert 'ClearRecentDocsOnExit' -Soll 1 -Standard $null `
     -PolicyGrund 'Nur der Richtlinienzweig ist belegt.'
 
-# ==============================================================
-#  17. LEISTUNG - VIRTUALISIERUNGSBASIERTE SICHERHEIT ABSCHALTEN
-#
-#      ABWÄGUNG, EHRLICH:
-#      VBS und Speicherintegrität sind echter Schutz. Sie
-#      greifen aber erst, wenn ein Angreifer bereits
-#      Administratorrechte auf dem Rechner hat und von dort in
-#      den Kernel will - über einen signierten, aber
-#      verwundbaren Treiber, den er selbst mitbringt. Auf einem
-#      privaten Rechner ohne Firmennetz ist das Szenario
-#      unwahrscheinlich; in Firmennetzen und bei
-#      Ransomware-Kampagnen ist es Alltag.
-#
-#      Dem gegenüber stehen dauerhafte Kosten: Der Hypervisor
-#      läuft immer mit, jeder Speicherzugriff durchläuft eine
-#      zusätzliche Adressübersetzung. Das kostet in Spielen
-#      etwa 3-6 Prozent der Bildrate und bei den kurzen Rucklern
-#      bis zu 15 Prozent - jeden Tag, nicht nur im Ernstfall.
-#      Mit Datenschutz hat der Punkt nichts zu tun.
-#
-#      REIHENFOLGE IST ZWINGEND: erst entsperren, dann
-#      abschalten, zuletzt den Hypervisor. Umgekehrt scheitert
-#      es an der eigenen Verriegelung.
-# ==============================================================
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI001' -Name 'Speicherintegrität entsperren' `
-    -Kategorie 'Leistung' -Stufe 'Maximum' -Typ 'Registry' `
+    -Kategorie 'Leistung' -Stufe 'Zusatz' -Typ 'Registry' `
     -Erklaerung 'Hebt die Verriegelung der Speicherintegrität auf, damit sie überhaupt abschaltbar ist. Ohne diesen Schritt scheitern die folgenden Punkte an der eigenen Sperre. Für sich allein ändert er nichts am Schutz.' `
     -Pfad 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity' -Wert 'Locked' -Soll 0 -Standard 0
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI002' -Name 'Speicherintegrität (HVCI) abschalten' `
-    -Kategorie 'Leistung' -Stufe 'Maximum' -Typ 'Registry' -SenktSchutz $true `
+    -Kategorie 'Leistung' -Stufe 'Zusatz' -Typ 'Registry' -SenktSchutz $true `
     -Erklaerung 'Schaltet die hypervisor-geschützte Code-Integrität ab. Sie prüft jede Treibersignatur, bevor Code in den Kernel darf, und ist der Hauptgrund für die Leistungseinbuße. Danach können wieder verwundbare signierte Treiber geladen werden - die Angriffsart, gegen die HVCI schützt.' `
     -Pfad 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity' -Wert 'Enabled' -Soll 0 -Standard 1 `
     -Hinweis 'Erfordert einen Neustart. Der Schalter unter Windows-Sicherheit, Gerätesicherheit, Kernisolierung bleibt bedienbar - du kannst jederzeit wieder einschalten.'
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI003' -Name 'Credential Guard abschalten' `
-    -Kategorie 'Leistung' -Stufe 'Maximum' -Typ 'Registry' -SenktSchutz $true `
+    -Kategorie 'Leistung' -Stufe 'Zusatz' -Typ 'Registry' -SenktSchutz $true `
     -Erklaerung 'Schaltet die Isolierung der Anmeldedaten im geschützten Speicherbereich ab. Ohne diesen Punkt hält Windows den Hypervisor weiter am Leben, und die Leistung kommt trotz der übrigen Punkte nicht zurück. Der einfache LSA-Schutz aus der Kategorie Sicherheit bleibt davon unberührt und schützt weiterhin gegen das Auslesen der Anmeldedaten.' `
     -Pfad 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -Wert 'LsaCfgFlags' -Soll 0 -Standard $null `
     -Hinweis 'Erfordert einen Neustart.'
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI007' -Name 'Credential Guard: zweiter Schalter' `
-    -Kategorie 'Leistung' -Stufe 'Maximum' -Typ 'Registry' -SenktSchutz $true `
+    -Kategorie 'Leistung' -Stufe 'Zusatz' -Typ 'Registry' -SenktSchutz $true `
     -Erklaerung 'Windows führt den Zustand von Credential Guard an zwei Stellen. Wurde er über diese zweite Stelle aktiviert, bleibt er trotz des vorigen Punktes stehen. Erst beide zusammen schalten ihn ab.' `
     -Pfad 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\CredentialGuard' -Wert 'Enabled' -Soll 0 -Standard $null `
     -Hinweis 'Erfordert einen Neustart.'
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI004' -Name 'VBS abschalten' `
-    -Kategorie 'Leistung' -Stufe 'Maximum' -Typ 'Registry' -SenktSchutz $true `
+    -Kategorie 'Leistung' -Stufe 'Zusatz' -Typ 'Registry' -SenktSchutz $true `
     -Erklaerung 'Schaltet die virtualisierungsbasierte Sicherheit selbst ab - die Trennung des Rechners in zwei Vertrauensebenen, auf der Speicherintegrität und Credential Guard aufsetzen.' `
     -Pfad 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard' -Wert 'EnableVirtualizationBasedSecurity' -Soll 0 -Standard 1 `
     -Hinweis 'Erfordert einen Neustart.'
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI005' -Name 'Hypervisor beim Start weglassen' `
-    -Kategorie 'Leistung' -Stufe 'Maximum' -Typ 'Hypervisor' -SenktSchutz $true `
+    -Kategorie 'Leistung' -Stufe 'Zusatz' -Typ 'Hypervisor' -SenktSchutz $true `
     -Erklaerung 'Nimmt den Hypervisor aus der Startkonfiguration. Das ist der Schritt, der die Leistung tatsächlich zurückbringt: Die Registrierungswerte allein halten den Hypervisor sonst weiter am Laufen, und damit bleibt die zusätzliche Adressübersetzung bei jedem Speicherzugriff bestehen.' `
     -Wert 'hypervisorlaunchtype' -Soll 'Off' -Standard 'Auto' `
     -BenoetigtVon @(
@@ -2551,14 +2527,14 @@ $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI005' -Name 'Hypervisor beim
     -Hinweis 'ACHTUNG: Danach funktionieren Hyper-V, WSL2, Windows Sandbox, Docker Desktop und das Windows-Subsystem für Android nicht mehr - sie alle brauchen den Hypervisor. VMware Workstation und VirtualBox laufen dafür wieder mit voller Geschwindigkeit. Erfordert einen Neustart.'
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI008' -Name 'Windows-Hello-Anmeldesicherheit abschalten' `
-    -Kategorie 'Leistung' -Stufe 'Maximum' -Typ 'Registry' -SenktSchutz $true `
+    -Kategorie 'Leistung' -Stufe 'Zusatz' -Typ 'Registry' -SenktSchutz $true `
     -Erklaerung 'Die erweiterte Anmeldesicherheit von Windows Hello legt die Daten für die Anmeldung per Gesicht oder Fingerabdruck in einen abgeschotteten Bereich, den die virtualisierungsbasierte Sicherheit bereitstellt. Solange sie an ist, läuft VBS weiter - auch wenn alle anderen Punkte dieser Kategorie es abschalten (gemessen: einzige verbliebene Ursache). Wer sich nur mit PIN oder Passwort anmeldet, verliert dadurch nichts.' `
     -Pfad 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\WindowsHello' -Wert 'Enabled' -Soll 0 -Standard 1 `
     -NurWennVorhanden $true `
     -Hinweis 'FOLGE: Meldest du dich per Gesicht oder Fingerabdruck an, ist diese Anmeldung danach schlechter geschützt und muss womöglich neu eingerichtet werden; manche Geräte verweigern die biometrische Anmeldung dann ganz. PIN und Passwort funktionieren weiter. Auf einem Laptop mit Gesichtserkennung oder Fingerabdruckleser: hier besser Nein. Wirkt nach einem Neustart.'
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'LEI006' -Name 'Abschaltung nachprüfen' `
-    -Kategorie 'Leistung' -Stufe 'Maximum' -Typ 'DeviceGuard' -NurWaechter $true `
+    -Kategorie 'Leistung' -Stufe 'Zusatz' -Typ 'DeviceGuard' -NurWaechter $true `
     -Erklaerung 'Sieht nach dem Neustart nach, ob die Abschaltung tatsächlich gewirkt hat. Ist VBS per UEFI verriegelt worden - das kommt auf Geschäftsgeräten vor -, reichen die Registrierungswerte nicht, und du würdest sonst nie erfahren, dass der Hypervisor weiterläuft. Dieser Punkt ändert nichts, er prüft nur.' `
     -Wert 'VirtualizationBasedSecurityStatus' -Soll 0 -Standard 0 `
     -Wirkung 'DeviceGuard' `
@@ -2827,7 +2803,7 @@ $Global:OrcaEinstellungen += New-OrcaSetting -Id 'UPD021' -Name 'Kein automatisc
     -PolicyGrund 'Nur über den Richtlinienzweig belegt (WindowsUpdate.admx).'
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'TEL068' -Name 'Keine Leistungsdiagnose-Aufzeichnung' `
-    -Kategorie 'Telemetrie' -Stufe 'Maximum' -Typ 'Registry' `
+    -Kategorie 'Telemetrie' -Stufe 'Maximum' -Typ 'Registry' -Ausgemustert $true `
     -Erklaerung 'Windows zeichnet keine Diagnosedaten über Start- und Leistungsprobleme mehr auf.' `
     -Pfad 'HKLM:\SYSTEM\CurrentControlSet\Control\Diagnostics\Performance' -Wert 'DisableDiagnosticTracing' -Soll 1 -Standard 0 `
     -Hinweis 'Die Leistungsdiagnose in der Ereignisanzeige bleibt dann leer.'
@@ -2902,7 +2878,7 @@ $Global:OrcaEinstellungen += New-OrcaSetting -Id 'EXP007' -Name 'Netzlaufwerke n
     -Hinweis 'Andere Anwendungen im selben Netz bekommen während großer Kopiervorgänge weniger Bandbreite.'
 
 $Global:OrcaEinstellungen += New-OrcaSetting -Id 'EXP008' -Name 'Suchindex richtet sich nach dem Energiemodus' `
-    -Kategorie 'Experimentell' -Stufe 'Experimentell' -Typ 'Registry' `
+    -Kategorie 'Experimentell' -Stufe 'Experimentell' -Typ 'Registry' -Ausgemustert $true `
     -Erklaerung 'Der Suchindex arbeitet im Energiesparmodus zurückhaltender und schont so den Akku.' `
     -Pfad 'HKLM:\SOFTWARE\Microsoft\Windows Search\Gather\Windows\SystemIndex' -Wert 'RespectPowerModes' -Soll 1 -Standard 0 `
     -Hinweis 'Neue Dateien tauchen im Akkubetrieb später in der Suche auf.'
@@ -3067,6 +3043,8 @@ $Global:OrcaBekannt = @(
     @{ Name='Defender: Sicherheitsinformationen erst nach 4294967295 Tagen als veraltet werten, Nachhol-Update nach 0 Tagen'; Kategorie='Defender'; Art='Wert offen'; Grund='Der Höchstwert lässt sich nicht sicher als Zahl setzen und nachprüfen; was 0 Tage bedeutet, sagt die Richtliniendefinition nicht.' }
     @{ Name='Defender: Telemetrie und Fernkonfiguration des Kerndiensts'; Kategorie='Defender'; Art='gesperrter Schlüssel'; Grund='Die Wertnamen stehen in den Programmdateien des Defender-Kerndiensts, aber nur für dessen eigenen Schlüssel, den Administratoren nicht beschreiben dürfen. Ein Weg über den Richtlinienzweig ist nicht belegt.' }
     @{ Name='Defender: Manipulationsschutz, Dienststart, Cloudmeldungen und weitere Werte im Defender-eigenen Schlüssel'; Kategorie='Defender'; Art='gesperrter Schlüssel'; Grund='Den Schlüssel HKLM\SOFTWARE\Microsoft\Windows Defender dürfen Administratoren nur lesen. Den Manipulationsschutz schaltest du selbst in der Windows-Sicherheit ab.' }
+    @{ Name='Keine Leistungsdiagnose-Aufzeichnung'; Kategorie='Telemetrie'; Art='gesperrter Schlüssel'; Grund='Den Schlüssel HKLM\SYSTEM\CurrentControlSet\Control\Diagnostics\Performance dürfen Administratoren nur lesen; schreiben darf nur der Diagnosedienst von Windows.' }
+    @{ Name='Suchindex richtet sich nach dem Energiemodus'; Kategorie='Experimentell'; Art='gesperrter Schlüssel'; Grund='Den Schlüssel des Suchindex dürfen Administratoren nur lesen; schreiben dürfen nur SYSTEM und der Suchdienst.' }
     @{ Name='Microsoft Antimalware: Dienst dauerhaft, schneller Start, Cloud-Benachrichtigungen'; Kategorie='Defender'; Art='in diesem Windows entfallen'; Grund='Betrifft das frühere System Center Endpoint Protection, nicht Defender in Windows 11.' }
     @{ Name='Defender-Ereignisprotokolle (Operational, WHC) abschalten'; Kategorie='Defender'; Art='Wert offen'; Grund='Dass ein Registrywert allein diese Protokolle abschaltet, ist nicht belegt.' }
     @{ Name='Entfernungstool nicht mehr über Windows Update anbieten'; Kategorie='Defender'; Art='Wert offen'; Grund='Wertname weder in einer Richtliniendefinition noch in den Update-Programmdateien gefunden.' }

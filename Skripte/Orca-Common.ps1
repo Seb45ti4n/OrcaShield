@@ -1,5 +1,5 @@
 ﻿
-$Global:OrcaVersion = '1.0.0 Public Beta'
+$Global:OrcaVersion = '1.0.1 Public Beta'
 $Global:OrcaProdukt = $Global:OrcaVersion
 
 $Global:OrcaSkripte = Split-Path -Parent $PSCommandPath
@@ -424,6 +424,65 @@ function Test-OrcaWegSicher {
     } catch { return $false }
 }
 
+function Initialize-OrcaHandleLoeschen {
+    if ('OrcaShield.HandleLoeschen' -as [type]) { return }
+    Add-Type -ErrorAction Stop -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
+namespace OrcaShield {
+    public static class HandleLoeschen {
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern SafeFileHandle CreateFileW(string name, uint access, uint share, IntPtr sa, uint disp, uint flags, IntPtr tmpl);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern uint GetFinalPathNameByHandleW(SafeFileHandle h, StringBuilder buf, uint len, uint flags);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool GetFileInformationByHandleEx(SafeFileHandle h, int cls, out AttributTag info, uint size);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool SetFileInformationByHandle(SafeFileHandle h, int cls, ref uint info, uint size);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool SetFileInformationByHandle(SafeFileHandle h, int cls, ref byte info, uint size);
+        [StructLayout(LayoutKind.Sequential)] struct AttributTag { public uint Attribute; public uint Tag; }
+
+        // 0 = gelöscht, 1 = nicht vorhanden, 2 = übersprungen (Verknüpfung oder liegt woanders), 3 = Fehler
+        public static int Loeschen(string pfad) {
+            string voll = System.IO.Path.GetFullPath(pfad).TrimEnd('\\');
+            string lang = voll.StartsWith(@"\\") ? voll : @"\\?\" + voll;
+            // DELETE | FILE_READ_ATTRIBUTES; alle Freigaben; OPEN_EXISTING;
+            // FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS (auch Ordner)
+            using (var h = CreateFileW(lang, 0x00010000 | 0x80, 7, IntPtr.Zero, 3, 0x00200000 | 0x02000000, IntPtr.Zero)) {
+                if (h.IsInvalid) {
+                    int e = Marshal.GetLastWin32Error();
+                    return (e == 2 || e == 3) ? 1 : 3;
+                }
+                AttributTag t;
+                if (!GetFileInformationByHandleEx(h, 9, out t, 8)) return 3;      // FileAttributeTagInfo
+                if ((t.Attribute & 0x400) != 0) return 2;                          // selbst eine Verknüpfung: liegen lassen
+                var sb = new StringBuilder(32768);
+                uint n = GetFinalPathNameByHandleW(h, sb, (uint)sb.Capacity, 0);
+                if (n == 0 || n >= sb.Capacity) return 3;
+                string echt = sb.ToString();
+                if (echt.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) return 2;
+                if (echt.StartsWith(@"\\?\")) echt = echt.Substring(4);
+                if (!string.Equals(echt.TrimEnd('\\'), voll, StringComparison.OrdinalIgnoreCase)) return 2;
+                // FileDispositionInfoEx: DELETE | POSIX_SEMANTICS | IGNORE_READONLY_ATTRIBUTE
+                uint ex = 0x1 | 0x2 | 0x10;
+                if (SetFileInformationByHandle(h, 21, ref ex, 4)) return 0;
+                byte alt = 1;                                                      // FileDispositionInfo (älteres Windows)
+                return SetFileInformationByHandle(h, 4, ref alt, 1) ? 0 : 3;
+            }
+        }
+    }
+}
+'@
+}
+
+function Remove-OrcaEintragSicher {
+    param([Parameter(Mandatory)][string]$Pfad)
+    try { Initialize-OrcaHandleLoeschen; return [OrcaShield.HandleLoeschen]::Loeschen($Pfad) } catch { return 3 }
+}
+
 function Get-OrcaDateienSicher {
     # Dateien unterhalb von $Wurzel (optional rekursiv, mit Muster), ohne
     # Verknüpfungen zu folgen. Rückgabe: Liste voller Pfade.
@@ -457,7 +516,7 @@ function Remove-OrcaPfadSicher {
     if (-not (Test-OrcaWegSicher -Wurzel $Wurzel -Pfad $Pfad)) { return $false }
     if (Test-Path -LiteralPath $Pfad -PathType Container) {
         foreach ($f in (Get-OrcaDateienSicher -Wurzel $Pfad -Rekursiv)) {
-            if (Test-OrcaWegSicher -Wurzel $Wurzel -Pfad $f) { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue }
+            if (Test-OrcaWegSicher -Wurzel $Wurzel -Pfad $f) { [void](Remove-OrcaEintragSicher -Pfad $f) }
         }
         # Leere Ordner von unten nach oben; ein Ordner mit Verknüpfung darin bleibt (nicht leer)
         $ordner = New-Object System.Collections.ArrayList
@@ -468,11 +527,11 @@ function Remove-OrcaPfadSicher {
         }
         foreach ($o in @($ordner | Sort-Object { $_.Length } -Descending)) {
             if ((Test-OrcaWegSicher -Wurzel $Wurzel -Pfad $o) -and @(Get-ChildItem -LiteralPath $o -Force -ErrorAction SilentlyContinue).Count -eq 0) {
-                Remove-Item -LiteralPath $o -Force -ErrorAction SilentlyContinue
+                [void](Remove-OrcaEintragSicher -Pfad $o)
             }
         }
     } else {
-        Remove-Item -LiteralPath $Pfad -Force -ErrorAction SilentlyContinue
+        [void](Remove-OrcaEintragSicher -Pfad $Pfad)
     }
     return -not (Test-Path -LiteralPath $Pfad)
 }
@@ -531,6 +590,13 @@ function Test-OrcaOrdnerRechte {
                     Where-Object { $_.PSIsContainer -or $_.Extension -in @('.ps1','.cmd','.json') })
         foreach ($z in $ziele) {
             $acl = Get-Acl -LiteralPath $z.FullName -ErrorAction Stop
+            $besitzer = ''
+            try { $besitzer = $acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value } catch { }
+            if ($besitzer -notin @('S-1-5-32-544', 'S-1-5-18', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')) {
+                $rel = $z.FullName.Substring([Math]::Min($z.FullName.Length, $Pfad.Length)).TrimStart('\')
+                if (-not $rel) { $rel = '(Programmordner)' }
+                $befund += "$rel : Besitzer ist $($acl.Owner)"
+            }
             foreach ($ace in $acl.Access) {
                 if ($ace.AccessControlType -ne 'Allow') { continue }
                 if (($ace.FileSystemRights -band $Global:OrcaSchreibrechte) -eq 0) { continue }
@@ -564,6 +630,7 @@ function Set-OrcaOrdnerRechte {
             -Argumente "`"$Pfad`" /inheritance:r /grant:r *S-1-5-32-544:(OI)(CI)F *S-1-5-18:(OI)(CI)F *S-1-5-32-545:(OI)(CI)RX /C /Q"
     # Schritt 2: alles darunter auf die geerbten Rechte zurücksetzen.
     $rc2 = Invoke-OrcaProgramm -Datei 'icacls.exe' -Argumente "`"$Pfad\*`" /reset /T /C /Q"
+    [void](Invoke-OrcaProgramm -Datei 'icacls.exe' -Argumente "`"$Pfad`" /setowner *S-1-5-32-544 /T /C /Q")
     $stand = Test-OrcaOrdnerRechte -Pfad $Pfad
     $grund = if ($stand.Sicher) { '' } else { "icacls meldete $rc1/$rc2; " + ($stand.Befund -join '; ') }
     return @{ Erfolg = $stand.Sicher; Grund = $grund }
@@ -939,20 +1006,77 @@ function Test-OrcaAnwendbar {
     return @{ Anwendbar = $true; Grund = '' }
 }
 
-# --------------------------------------------------------------
-#  ZUSTANDSDATEI (was wurde installiert / welche Version)
-# --------------------------------------------------------------
-function Get-OrcaState {
-    if (Test-Path $Global:OrcaState) {
-        try { return Get-Content $Global:OrcaState -Raw -ErrorAction Stop | ConvertFrom-Json } catch { return $null }
+$Global:OrcaZustandSperre  = 'Global\OrcaShield.Zustand'
+$Global:OrcaStateUnlesbar  = $false
+
+function Invoke-OrcaMitSperre {
+    # Führt $Aktion unter der benannten Sperre aus. Die Sperre ist
+    # wiedereintrittsfähig (Set-OrcaStateFeld ruft Save-OrcaState
+    # darin auf). Zugriff haben nur Administratoren und SYSTEM, weil
+    # App/Wächter erhöht und die Bereinigung als SYSTEM laufen.
+    param([Parameter(Mandatory)][scriptblock]$Aktion, [int]$Sekunden = 15)
+    $orcaSperreM = $null; $orcaSperreHab = $false
+    try {
+        try {
+            $orcaSperreSich = New-Object System.Security.AccessControl.MutexSecurity
+            foreach ($orcaSperreSid in @('S-1-5-32-544', 'S-1-5-18')) {
+                $orcaSperreSich.AddAccessRule((New-Object System.Security.AccessControl.MutexAccessRule(
+                    (New-Object System.Security.Principal.SecurityIdentifier $orcaSperreSid),
+                    [System.Security.AccessControl.MutexRights]::FullControl,
+                    [System.Security.AccessControl.AccessControlType]::Allow)))
+            }
+            $orcaSperreNeu = $false
+            $orcaSperreM = New-Object System.Threading.Mutex($false, $Global:OrcaZustandSperre, [ref]$orcaSperreNeu, $orcaSperreSich)
+        } catch {
+            $orcaSperreM = [System.Threading.Mutex]::OpenExisting($Global:OrcaZustandSperre)
+        }
+        try { $orcaSperreHab = $orcaSperreM.WaitOne([TimeSpan]::FromSeconds($Sekunden)) }
+        catch [System.Threading.AbandonedMutexException] { $orcaSperreHab = $true }   # Vorbesitzer abgebrochen - Sperre gehört jetzt uns
+        if (-not $orcaSperreHab) { throw "Zustandsdatei ist seit $Sekunden Sekunden von einem anderen Teil von OrcaShield gesperrt" }
+        return (& $Aktion)
+    } finally {
+        if ($orcaSperreHab) { try { $orcaSperreM.ReleaseMutex() } catch { } }
+        if ($orcaSperreM) { $orcaSperreM.Dispose() }
     }
-    return $null
+}
+
+function Move-OrcaDateiErsetzt {
+    param([Parameter(Mandatory)][string]$Ziel)
+    $neu = "$Ziel.neu"
+    if (Test-Path -LiteralPath $Ziel) { [IO.File]::Replace($neu, $Ziel, "$Ziel.vorher") }
+    else { [IO.File]::Move($neu, $Ziel) }
+}
+
+function Write-OrcaJsonDatei {
+    # JSON in eine Nebendatei schreiben, dann austauschen.
+    param([Parameter(Mandatory)][string]$Ziel, [Parameter(Mandatory)]$Inhalt)
+    $Inhalt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath "$Ziel.neu" -Encoding UTF8 -ErrorAction Stop
+    Move-OrcaDateiErsetzt -Ziel $Ziel
+}
+
+function Get-OrcaState {
+    # $null heißt: nicht vorhanden ODER unlesbar. Welcher Fall,
+    # steht danach in $Global:OrcaStateUnlesbar.
+    $Global:OrcaStateUnlesbar = $false
+    if (-not (Test-Path -LiteralPath $Global:OrcaState)) { return $null }
+    try {
+        $roh = Get-Content -LiteralPath $Global:OrcaState -Raw -ErrorAction Stop
+        if (-not $roh -or -not $roh.Trim()) { throw 'die Datei ist leer' }
+        $st = $roh | ConvertFrom-Json -ErrorAction Stop
+        if ($null -eq $st) { throw 'kein Inhalt lesbar' }
+        return $st
+    } catch {
+        $Global:OrcaStateUnlesbar = $true
+        Write-OrcaLog -Level FEHLER -Source 'STATE' `
+            -Message "Zustandsdatei vorhanden, aber nicht lesbar ($($_.Exception.Message)). Sie wird nicht überschrieben. Letzte gute Fassung: '$($Global:OrcaState).vorher' - von Hand zurücklegen."
+        return $null
+    }
 }
 
 function Save-OrcaState {
     param($State)
     try {
-        $State | ConvertTo-Json -Depth 6 | Set-Content -Path $Global:OrcaState -Encoding UTF8 -ErrorAction Stop
+        Invoke-OrcaMitSperre { Write-OrcaJsonDatei -Ziel $Global:OrcaState -Inhalt $State } | Out-Null
         return $true
     } catch {
         Write-OrcaLog -Level FEHLER -Source 'STATE' -Message "Zustandsdatei nicht speicherbar: $($_.Exception.Message)"
@@ -966,10 +1090,19 @@ function Set-OrcaStateFeld {
         $Wert
     )
     try {
-        $state = Get-OrcaState
-        if (-not $state) { $state = [pscustomobject]@{} }
-        $state | Add-Member -NotePropertyName $Name -NotePropertyValue $Wert -Force
-        return (Save-OrcaState -State $state)
+        return (Invoke-OrcaMitSperre {
+            $state = Get-OrcaState
+            if (-not $state) {
+                if ($Global:OrcaStateUnlesbar) {
+                    Write-OrcaLog -Level FEHLER -Source 'STATE' `
+                        -Message "Feld '$Name' nicht geschrieben: Die Zustandsdatei ist unlesbar und wird nicht durch eine leere ersetzt."
+                    return $false
+                }
+                $state = [pscustomobject]@{}
+            }
+            $state | Add-Member -NotePropertyName $Name -NotePropertyValue $Wert -Force
+            return (Save-OrcaState -State $state)
+        })
     } catch {
         Write-OrcaLog -Level WARN -Source 'STATE' -Message "Feld '$Name' nicht speicherbar: $($_.Exception.Message)"
         return $false
